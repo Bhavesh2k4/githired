@@ -2,7 +2,8 @@
 
 import { auth } from "@/lib/auth";
 import { db } from "@/db/drizzle";
-import { students } from "@/db/schema";
+import { students, companies, user } from "@/db/schema";
+import { eq } from "drizzle-orm";
 
 export const signInUser = async (email: string, password: string) => {
     try {
@@ -20,7 +21,11 @@ export const signInUser = async (email: string, password: string) => {
     }
 };
 
-export const signUpUser = async (email: string, password: string, name: string) => {
+export const signUpUser = async (
+    email: string, 
+    password: string, 
+    name: string
+) => {
     try {
         const result = await auth.api.signUpEmail({
             body: {
@@ -30,16 +35,10 @@ export const signUpUser = async (email: string, password: string, name: string) 
             },
         });
 
-        // Create student profile automatically after signup
-        if (result?.user?.id) {
-            await db.insert(students).values({
-                userId: result.user.id,
-                email: email,
-                status: "pending",
-            });
-        }
+        // Don't create profile yet - user will select role on /select-role page
+        // This makes email/password signup consistent with OAuth flow
 
-        return { success: true, message: "Signed up successfully" };
+        return { success: true, message: "Signed up successfully. Please check your email for verification." };
     } catch (error) {
         const e = error as Error;
         return { success: false, message: e.message || "Failed to sign up" };

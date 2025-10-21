@@ -24,25 +24,43 @@ export async function AppSidebar({
 }: React.ComponentProps<typeof Sidebar>) {
   const session = await auth.api.getSession({ headers: await headers() });
   
-  let isAdmin = false;
+  let userRole = "student";
   if (session?.user?.id) {
     const currentUser = await db.query.user.findFirst({
       where: eq(user.id, session.user.id),
     });
-    isAdmin = currentUser?.role === "admin";
+    userRole = currentUser?.role || "student";
   }
 
-  const data = {
-    versions: ["1.0.0"],
-    navMain: isAdmin ? [
+  // Define navigation based on user role
+  let navMain;
+  if (userRole === "admin") {
+    navMain = [
       {
         title: "Admin",
         url: "/dashboard/admin",
         items: [
-          { title: "Student Management", url: "/dashboard/admin" },
+          { title: "Dashboard", url: "/dashboard/admin" },
+          { title: "Students", url: "/dashboard/admin/students" },
+          { title: "Companies", url: "/dashboard/admin/companies" },
         ],
       },
-    ] : [
+    ];
+  } else if (userRole === "company") {
+    navMain = [
+      {
+        title: "Company",
+        url: "/dashboard/company",
+        items: [
+          { title: "Dashboard", url: "/dashboard/company" },
+          { title: "Profile", url: "/dashboard/company/profile/edit" },
+          { title: "Jobs", url: "/dashboard/company/jobs" },
+        ],
+      },
+    ];
+  } else {
+    // Student
+    navMain = [
       {
         title: "Student",
         url: "/dashboard",
@@ -52,7 +70,12 @@ export async function AppSidebar({
           { title: "Jobs", url: "/dashboard/jobs" },
         ],
       },
-    ],
+    ];
+  }
+
+  const data = {
+    versions: ["1.0.0"],
+    navMain,
   };
 
   return (
@@ -60,7 +83,11 @@ export async function AppSidebar({
       <SidebarHeader>
         <Link href="/dashboard" className="flex items-center gap-2 pl-2">
           <Image src="/noteforge-logo.png" alt="Logo" width={32} height={32} />
-          <h2>{isAdmin ? "Admin Portal" : "Job Portal"}</h2>
+          <h2>
+            {userRole === "admin" ? "Admin Portal" : 
+             userRole === "company" ? "Company Portal" : 
+             "Job Portal"}
+          </h2>
         </Link>
 
         <React.Suspense>

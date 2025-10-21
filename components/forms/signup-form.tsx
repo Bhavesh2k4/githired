@@ -26,15 +26,15 @@ import {
 import { signUpUser } from "@/server/users";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, Building2, GraduationCap } from "lucide-react";
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 
 const formSchema = z.object({
-  email: z.email(),
-  password: z.string().min(8),
-  confirmPassword: z.string().min(8),
-  name: z.string().min(1),
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  confirmPassword: z.string().min(8, "Password must be at least 8 characters"),
+  name: z.string().min(1, "Name is required"),
 });
 
 export function SignupForm({
@@ -42,6 +42,7 @@ export function SignupForm({
   ...props
 }: React.ComponentProps<"div">) {
   const [isLoading, setIsLoading] = useState(false);
+  
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -81,7 +82,7 @@ export function SignupForm({
   const signUp = async () => {
     await authClient.signIn.social({
       provider: "google",
-      callbackURL: "/dashboard",
+      callbackURL: "/select-role", // Redirect to role selection for OAuth users
     });
   };
 

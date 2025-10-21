@@ -2,7 +2,7 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db/drizzle";
-import { user, students } from "@/db/schema";
+import { user, students, companies } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 export async function middleware(request: NextRequest) {
@@ -25,36 +25,115 @@ export async function middleware(request: NextRequest) {
 
     const pathname = request.nextUrl.pathname;
 
-    // Admin access
+    // Check if email is verified (skip for OAuth users who auto-verify)
+    if (!currentUser.emailVerified && !pathname.startsWith("/verify-email")) {
+        return NextResponse.redirect(new URL("/verify-email", request.url));
+    }
+
+    // Check if user has a profile (for OAuth users who haven't selected role yet)
+    let studentProfile = null;
+    let companyProfile = null;
+    
+    try {
+        studentProfile = await db.query.students.findFirst({
+            where: eq(students.userId, session.user.id),
+        });
+    } catch (error) {
+        console.error("Error fetching student profile:", error);
+    }
+    
+    try {
+        companyProfile = await db.query.companies.findFirst({
+            where: eq(companies.userId, session.user.id),
+        });
+    } catch (error) {
+        // Companies table might not exist yet - ignore error
+        console.error("Error fetching company profile (table might not exist yet):", error);
+    }
+
+    // If user has no profile and not already on select-role page, redirect there
+    if (!studentProfile && !companyProfile) {
+        if (!pathname.startsWith("/select-role")) {
+            return NextResponse.redirect(new URL("/select-role", request.url));
+        }
+        // Allow access to select-role page
+        return NextResponse.next();
+    }
+
+    // ==== ADMIN ROLE ====
     if (currentUser.role === "admin") {
         // Admin can access /dashboard/admin
         if (pathname.startsWith("/dashboard/admin")) {
             return NextResponse.next();
         }
         // Redirect admin from ANY other dashboard route to admin dashboard
-        // Admins should ONLY access /dashboard/admin
         return NextResponse.redirect(new URL("/dashboard/admin", request.url));
     }
 
-    // Student access
-    // Block students from accessing admin routes
+    // Block non-admins from accessing admin routes
     if (pathname.startsWith("/dashboard/admin")) {
         return NextResponse.redirect(new URL("/dashboard", request.url));
     }
 
-    // Get student profile
-    let studentProfile = await db.query.students.findFirst({
-        where: eq(students.userId, session.user.id),
-    });
+    // ==== COMPANY ROLE ====
+    if (currentUser.role === "company") {
+        // Company profile already fetched above, just verify it exists
+        if (!companyProfile) {
+            return NextResponse.redirect(new URL("/select-role", request.url));
+        }
 
-    // Auto-create profile if it doesn't exist (for OAuth signups or migrations)
+        // Redirect companies from student routes to company routes
+        if (pathname.startsWith("/dashboard/profile") && !pathname.startsWith("/dashboard/company")) {
+            return NextResponse.redirect(new URL("/dashboard/company", request.url));
+        }
+        if (pathname === "/dashboard/pending" || pathname.startsWith("/dashboard/pending")) {
+            return NextResponse.redirect(new URL("/dashboard/company/pending", request.url));
+        }
+        if (pathname === "/dashboard/jobs") {
+            return NextResponse.redirect(new URL("/dashboard/company/jobs", request.url));
+        }
+
+        // Handle different company statuses
+        if (companyProfile.status === "banned") {
+            // Banned companies can only see pending page
+            if (!pathname.startsWith("/dashboard/company/pending")) {
+                return NextResponse.redirect(new URL("/dashboard/company/pending", request.url));
+            }
+            return NextResponse.next();
+        }
+
+        if (companyProfile.status === "rejected" || companyProfile.status === "pending") {
+            // Pending/rejected companies can access pending page and profile edit
+            if (pathname.startsWith("/dashboard/company/pending") || pathname.startsWith("/dashboard/company/profile/edit")) {
+                return NextResponse.next();
+            }
+            return NextResponse.redirect(new URL("/dashboard/company/pending", request.url));
+        }
+
+        // Approved companies
+        if (companyProfile.status === "approved") {
+            // Don't let approved companies access pending page
+            if (pathname.startsWith("/dashboard/company/pending")) {
+                return NextResponse.redirect(new URL("/dashboard/company", request.url));
+            }
+            // Allow access to company routes
+            if (pathname.startsWith("/dashboard/company") || pathname === "/dashboard") {
+                return NextResponse.next();
+            }
+        }
+
+        return NextResponse.next();
+    }
+
+    // ==== STUDENT ROLE ====
+    // Redirect students from company routes to student routes
+    if (pathname.startsWith("/dashboard/company")) {
+        return NextResponse.redirect(new URL("/dashboard", request.url));
+    }
+
+    // Student profile already fetched above, just verify it exists
     if (!studentProfile) {
-        const [newProfile] = await db.insert(students).values({
-            userId: session.user.id,
-            email: currentUser.email,
-            status: "pending",
-        }).returning();
-        studentProfile = newProfile;
+        return NextResponse.redirect(new URL("/select-role", request.url));
     }
 
     // Handle different student statuses
@@ -87,5 +166,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-    matcher: ["/dashboard/:path*"],
+    matcher: ["/dashboard/:path*", "/select-role", "/verify-email"],
 };

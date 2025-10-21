@@ -54,7 +54,7 @@ export function LoginForm({
   const signIn = async () => {
     await authClient.signIn.social({
       provider: "google",
-      callbackURL: "/dashboard",
+      callbackURL: "/select-role", // For first-time OAuth users; existing users will be redirected by the page
     });
   };
 
@@ -64,7 +64,8 @@ export function LoginForm({
       const response = await signInUser(values.email, values.password);
       if (response.success) {
         toast.success(response.message);
-        router.push("/dashboard");
+        // Redirect to select-role, which will auto-redirect to dashboard if profile exists
+        window.location.href = "/select-role";
       } else {
         toast.error(response.message);
       }

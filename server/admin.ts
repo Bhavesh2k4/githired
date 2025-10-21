@@ -1,13 +1,13 @@
 "use server";
 
 import { db } from "@/db/drizzle";
-import { students, user } from "@/db/schema";
+import { students, companies, user } from "@/db/schema";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { eq, and, desc, sql } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 
-// Verify admin access
-async function verifyAdmin() {
+// Check if user is admin
+async function checkAdmin() {
   const session = await auth.api.getSession({ headers: await headers() });
   
   if (!session) {
@@ -25,249 +25,196 @@ async function verifyAdmin() {
   return session;
 }
 
-// List students with cursor-based pagination
-export async function listStudents(params: {
-  cursor?: string; // student ID for cursor
-  limit?: number;
-  status?: "pending" | "approved" | "rejected" | "banned" | "all";
-}) {
-  await verifyAdmin();
+// ===== STUDENT MANAGEMENT =====
 
-  const limit = params.limit || 20;
-  const status = params.status || "all";
-
-  // Build conditions
-  let conditions: any[] = [];
+export async function getAllStudents(status?: string) {
+  await checkAdmin();
   
-  if (status !== "all") {
-    conditions.push(eq(students.status, status));
-  }
+  const query = status
+    ? db.query.students.findMany({
+        where: eq(students.status, status),
+        with: { user: true },
+        orderBy: [desc(students.createdAt)],
+      })
+    : db.query.students.findMany({
+        with: { user: true },
+        orderBy: [desc(students.createdAt)],
+      });
 
-  if (params.cursor) {
-    const cursorStudent = await db.query.students.findFirst({
-      where: eq(students.id, params.cursor),
-    });
-
-    if (cursorStudent) {
-      conditions.push(
-        sql`(${students.createdAt}, ${students.id}) < (${cursorStudent.createdAt}, ${cursorStudent.id})`
-      );
-    }
-  }
-
-  // Use query builder with join to get user name
-  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
-  
-  const results = await db.query.students.findMany({
-    where: whereClause,
-    with: {
-      user: {
-        columns: {
-          name: true,
-        },
-      },
-    },
-    orderBy: [desc(students.createdAt), desc(students.id)],
-    limit: limit + 1,
-  });
-
-  const hasMore = results.length > limit;
-  const items = hasMore ? results.slice(0, limit) : results;
-  const nextCursor = hasMore ? items[items.length - 1].id : null;
-
-  return {
-    items,
-    nextCursor,
-    hasMore,
-  };
+  return await query;
 }
 
-// Approve student (auto-verifies SRN if present)
 export async function approveStudent(studentId: string) {
-  await verifyAdmin();
+  await checkAdmin();
 
-  const student = await db.query.students.findFirst({
-    where: eq(students.id, studentId),
-  });
+  await db.update(students)
+    .set({ status: "approved", updatedAt: new Date() })
+    .where(eq(students.id, studentId));
 
-  if (!student) {
-    throw new Error("Student not found");
-  }
-
-  const updateData: any = {
-    status: "approved",
-    adminNote: null,
-    updatedAt: new Date(),
-  };
-
-  // Update analytics
-  const analytics = student.analytics as any || {};
-  analytics.profileApprovedAt = new Date().toISOString();
-  updateData.analytics = analytics;
-
-  // Auto-verify SRN when approving (if SRN exists)
-  if (student.srn) {
-    updateData.srnValid = true;
-  }
-
-  const [updated] = await db.update(students)
-    .set(updateData)
-    .where(eq(students.id, studentId))
-    .returning();
-
-  // TODO: Send notification email to student
-  // You can use the existing Resend setup from lib/auth.ts
-
-  return updated;
+  return { success: true };
 }
 
-// Reject student
-export async function rejectStudent(studentId: string, reason: string) {
-  await verifyAdmin();
+export async function rejectStudent(studentId: string, note?: string) {
+  await checkAdmin();
 
-  const student = await db.query.students.findFirst({
-    where: eq(students.id, studentId),
-  });
-
-  if (!student) {
-    throw new Error("Student not found");
-  }
-
-  const [updated] = await db.update(students)
-    .set({
-      status: "rejected",
-      adminNote: reason,
-      updatedAt: new Date(),
+  await db.update(students)
+    .set({ 
+      status: "rejected", 
+      adminNote: note || null,
+      updatedAt: new Date() 
     })
-    .where(eq(students.id, studentId))
-    .returning();
+    .where(eq(students.id, studentId));
 
-  // TODO: Send notification email with reason
-
-  return updated;
+  return { success: true };
 }
 
-// Ban student
-export async function banStudent(studentId: string, reason: string) {
-  await verifyAdmin();
+export async function banStudent(studentId: string, note?: string) {
+  await checkAdmin();
 
-  const student = await db.query.students.findFirst({
-    where: eq(students.id, studentId),
-  });
-
-  if (!student) {
-    throw new Error("Student not found");
-  }
-
-  const [updated] = await db.update(students)
-    .set({
-      status: "banned",
-      adminNote: reason,
-      updatedAt: new Date(),
+  await db.update(students)
+    .set({ 
+      status: "banned", 
+      adminNote: note || null,
+      updatedAt: new Date() 
     })
-    .where(eq(students.id, studentId))
-    .returning();
+    .where(eq(students.id, studentId));
 
-  // TODO: Send notification email
-
-  return updated;
+  return { success: true };
 }
 
-// Unban student
 export async function unbanStudent(studentId: string) {
-  await verifyAdmin();
+  await checkAdmin();
 
-  const student = await db.query.students.findFirst({
-    where: eq(students.id, studentId),
-  });
+  await db.update(students)
+    .set({ status: "approved", adminNote: null, updatedAt: new Date() })
+    .where(eq(students.id, studentId));
 
-  if (!student) {
-    throw new Error("Student not found");
-  }
-
-  if (student.status !== "banned") {
-    throw new Error("Student is not banned");
-  }
-
-  const [updated] = await db.update(students)
-    .set({
-      status: "pending", // Return to pending for re-review
-      adminNote: null,
-      updatedAt: new Date(),
-    })
-    .where(eq(students.id, studentId))
-    .returning();
-
-  return updated;
+  return { success: true };
 }
 
-// Unreject student (move from rejected back to pending)
 export async function unrejectStudent(studentId: string) {
-  await verifyAdmin();
+  await checkAdmin();
 
-  const student = await db.query.students.findFirst({
-    where: eq(students.id, studentId),
-  });
+  await db.update(students)
+    .set({ status: "pending", adminNote: null, updatedAt: new Date() })
+    .where(eq(students.id, studentId));
 
-  if (!student) {
-    throw new Error("Student not found");
-  }
+  return { success: true };
+}
 
-  if (student.status !== "rejected") {
-    throw new Error("Student is not rejected");
-  }
+export async function verifySRN(studentId: string, srn: string) {
+  await checkAdmin();
 
-  const [updated] = await db.update(students)
-    .set({
-      status: "pending", // Return to pending for re-review
-      adminNote: null,
-      updatedAt: new Date(),
+  await db.update(students)
+    .set({ srnValid: true, srn, updatedAt: new Date() })
+    .where(eq(students.id, studentId));
+
+  return { success: true };
+}
+
+// ===== COMPANY MANAGEMENT =====
+
+export async function getAllCompanies(status?: string) {
+  await checkAdmin();
+  
+  const query = status
+    ? db.query.companies.findMany({
+        where: eq(companies.status, status),
+        with: { user: true },
+        orderBy: [desc(companies.createdAt)],
+      })
+    : db.query.companies.findMany({
+        with: { user: true },
+        orderBy: [desc(companies.createdAt)],
+      });
+
+  return await query;
+}
+
+export async function approveCompany(companyId: string) {
+  await checkAdmin();
+
+  await db.update(companies)
+    .set({ 
+      status: "approved", 
+      verified: true, 
+      updatedAt: new Date() 
     })
-    .where(eq(students.id, studentId))
-    .returning();
+    .where(eq(companies.id, companyId));
 
-  return updated;
+  return { success: true };
 }
 
-// Manually verify SRN
-export async function verifySRN(studentId: string, valid: boolean) {
-  await verifyAdmin();
+export async function rejectCompany(companyId: string, note?: string) {
+  await checkAdmin();
 
-  const student = await db.query.students.findFirst({
-    where: eq(students.id, studentId),
-  });
-
-  if (!student) {
-    throw new Error("Student not found");
-  }
-
-  if (!student.srn) {
-    throw new Error("Student has no SRN to verify");
-  }
-
-  const [updated] = await db.update(students)
-    .set({
-      srnValid: valid,
-      updatedAt: new Date(),
+  await db.update(companies)
+    .set({ 
+      status: "rejected", 
+      verified: false,
+      adminNote: note || null,
+      updatedAt: new Date() 
     })
-    .where(eq(students.id, studentId))
-    .returning();
+    .where(eq(companies.id, companyId));
 
-  return updated;
+  return { success: true };
 }
 
-// Get statistics for admin dashboard
-export async function getAdminStats() {
-  await verifyAdmin();
+export async function banCompany(companyId: string, note?: string) {
+  await checkAdmin();
 
-  const [stats] = await db.select({
-    total: sql<number>`count(*)`,
-    pending: sql<number>`count(*) filter (where ${students.status} = 'pending')`,
-    approved: sql<number>`count(*) filter (where ${students.status} = 'approved')`,
-    rejected: sql<number>`count(*) filter (where ${students.status} = 'rejected')`,
-    banned: sql<number>`count(*) filter (where ${students.status} = 'banned')`,
-  }).from(students);
+  await db.update(companies)
+    .set({ 
+      status: "banned", 
+      verified: false,
+      adminNote: note || null,
+      updatedAt: new Date() 
+    })
+    .where(eq(companies.id, companyId));
 
-  return stats;
+  return { success: true };
 }
 
+export async function unbanCompany(companyId: string) {
+  await checkAdmin();
+
+  await db.update(companies)
+    .set({ 
+      status: "approved", 
+      verified: true,
+      adminNote: null, 
+      updatedAt: new Date() 
+    })
+    .where(eq(companies.id, companyId));
+
+  return { success: true };
+}
+
+export async function unrejectCompany(companyId: string) {
+  await checkAdmin();
+
+  await db.update(companies)
+    .set({ 
+      status: "pending", 
+      verified: false,
+      adminNote: null, 
+      updatedAt: new Date() 
+    })
+    .where(eq(companies.id, companyId));
+
+  return { success: true };
+}
+
+export async function verifyCompany(companyId: string) {
+  await checkAdmin();
+
+  await db.update(companies)
+    .set({ 
+      verified: true, 
+      status: "approved",
+      updatedAt: new Date() 
+    })
+    .where(eq(companies.id, companyId));
+
+  return { success: true };
+}

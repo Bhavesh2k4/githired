@@ -108,14 +108,10 @@ const PasswordResetEmail = ({
             {/* Footer */}
             <Section className="border-t border-gray-200 pt-[24px]">
               <Text className="text-[12px] text-gray-500 leading-[16px] m-0 mb-[8px]">
-                This email was sent by Your Company Name
-              </Text>
-              <Text className="text-[12px] text-gray-500 leading-[16px] m-0 mb-[8px]">
-                123 Business Street, Suite 100, City, State 12345
+                This email was sent by GitHired
               </Text>
               <Text className="text-[12px] text-gray-500 leading-[16px] m-0">
-                © {new Date().getFullYear()} Your Company Name. All rights
-                reserved.
+                © {new Date().getFullYear()} GitHired. All rights reserved.
               </Text>
             </Section>
           </Container>

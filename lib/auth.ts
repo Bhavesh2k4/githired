@@ -13,12 +13,18 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 export const auth = betterAuth({
     emailVerification: {
         sendVerificationEmail: async ({ user, url }) => {
-            await resend.emails.send({
-                from: 'NoteForge <noteforge@orcdev.com>',
-                to: [user.email],
-                subject: 'Verify your email address',
-                react: VerificationEmail({ userName: user.name, verificationUrl: url }),
-            });
+            try {
+                await resend.emails.send({
+                    from: process.env.EMAIL_FROM || 'GitHired <onboarding@resend.dev>',
+                    to: [user.email],
+                    subject: 'Verify your email address',
+                    react: VerificationEmail({ userName: user.name, verificationUrl: url }),
+                });
+                console.log(`✅ Verification email sent to ${user.email}`);
+            } catch (error) {
+                console.error(`❌ Failed to send verification email to ${user.email}:`, error);
+                throw error;
+            }
         },
         sendOnSignUp: true,
     },
@@ -31,12 +37,18 @@ export const auth = betterAuth({
     emailAndPassword: {
         enabled: true,
         sendResetPassword: async ({ user, url }) => {
-            await resend.emails.send({
-                from: 'NoteForge <noteforge@orcdev.com>',
-                to: [user.email],
-                subject: 'Reset your password',
-                react: PasswordResetEmail({ userName: user.name, resetUrl: url, requestTime: new Date().toLocaleString() }),
-            });
+            try {
+                await resend.emails.send({
+                    from: process.env.EMAIL_FROM || 'GitHired <onboarding@resend.dev>',
+                    to: [user.email],
+                    subject: 'Reset your password',
+                    react: PasswordResetEmail({ userName: user.name, resetUrl: url, requestTime: new Date().toLocaleString() }),
+                });
+                console.log(`✅ Password reset email sent to ${user.email}`);
+            } catch (error) {
+                console.error(`❌ Failed to send password reset email to ${user.email}:`, error);
+                throw error;
+            }
         },
     },
     database: drizzleAdapter(db, {
@@ -44,25 +56,6 @@ export const auth = betterAuth({
         schema
     }),
     plugins: [nextCookies()],
-    async onAfterSignUp(user) {
-        // Automatically create student profile for all signups (email/password and OAuth)
-        try {
-            // Check if student profile already exists
-            const existingProfile = await db.query.students.findFirst({
-                where: eq(students.userId, user.id),
-            });
-
-            // Only create if doesn't exist
-            if (!existingProfile) {
-                await db.insert(students).values({
-                    userId: user.id,
-                    email: user.email,
-                    status: "pending",
-                });
-            }
-        } catch (error) {
-            console.error("Error creating student profile:", error);
-            // Don't throw - let signup complete even if profile creation fails
-        }
-    },
+    // Removed onAfterSignUp - profile creation now handled via /select-role page
+    // This prevents automatic student profile creation for OAuth users
 });

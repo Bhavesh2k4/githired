@@ -63,25 +63,38 @@ export default function EditProfilePage() {
       });
 
       if (!res.ok) {
-        throw new Error("Failed to get upload URL");
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Failed to get upload URL");
       }
 
       const { uploadUrl, fileKey } = await res.json();
 
       // Upload file to DO Spaces
-      const uploadRes = await fetch(uploadUrl, {
-        method: "PUT",
-        body: file,
-        headers: {
-          "Content-Type": file.type,
-        },
-      });
-
-      if (!uploadRes.ok) {
-        throw new Error("Failed to upload file");
+      let uploadRes;
+      try {
+        uploadRes = await fetch(uploadUrl, {
+          method: "PUT",
+          body: file,
+          headers: {
+            "Content-Type": file.type,
+          },
+        });
+      } catch (fetchError: any) {
+        console.error("Fetch error:", fetchError);
+        throw new Error(
+          "Failed to upload to storage. This is likely a CORS configuration issue. " +
+          "Please ensure CORS is configured on your AWS S3 bucket. " +
+          "See AWS_S3_SETUP.md for instructions."
+        );
       }
 
-      // Get public URL
+      if (!uploadRes.ok) {
+        const errorText = await uploadRes.text();
+        console.error("Upload error:", errorText);
+        throw new Error(`Upload failed with status ${uploadRes.status}: ${errorText}`);
+      }
+
+      // Get public URL (remove query parameters)
       const publicUrl = uploadUrl.split("?")[0];
 
       // Add to resumes array
@@ -92,24 +105,62 @@ export default function EditProfilePage() {
         uploadedAt: new Date().toISOString(),
       };
 
+      const updatedResumes = [...currentResumes, newResume];
+
+      // Save to database immediately
+      const saveRes = await fetch("/api/student/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...profile,
+          resumes: updatedResumes,
+          resumeUrl: publicUrl, // Keep for backward compatibility
+        }),
+      });
+
+      if (!saveRes.ok) {
+        const errorData = await saveRes.json();
+        throw new Error(errorData.error || "Failed to save resume to profile");
+      }
+
       setProfile({ 
         ...profile, 
-        resumes: [...currentResumes, newResume],
-        resumeUrl: publicUrl // Keep for backward compatibility
+        resumes: updatedResumes,
+        resumeUrl: publicUrl,
+        newResumeLabel: "" // Clear the label input
       });
-      toast.success("Resume uploaded successfully");
-    } catch (error) {
-      toast.error("Failed to upload resume");
+      
+      toast.success("Resume uploaded and saved successfully!");
+      
+      // Reset the file input
+      e.target.value = "";
+    } catch (error: any) {
+      console.error("Resume upload error:", error);
+      toast.error(error.message || "Failed to upload resume");
     } finally {
       setUploading(false);
     }
   };
 
-  const handleDeleteResume = (index: number) => {
-    const currentResumes = profile.resumes || [];
-    const newResumes = currentResumes.filter((_: any, i: number) => i !== index);
-    setProfile({ ...profile, resumes: newResumes });
-    toast.success("Resume removed");
+  const handleDeleteResume = async (index: number) => {
+    try {
+      const res = await fetch(`/api/student/resume?index=${index}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Failed to delete resume");
+      }
+
+      const data = await res.json();
+      
+      setProfile({ ...profile, resumes: data.resumes });
+      toast.success("Resume deleted successfully!");
+    } catch (error: any) {
+      console.error("Resume deletion error:", error);
+      toast.error(error.message || "Failed to delete resume");
+    }
   };
 
   const handleSave = async () => {

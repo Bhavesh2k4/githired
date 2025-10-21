@@ -1,17 +1,16 @@
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
-// Initialize DigitalOcean Spaces client (S3-compatible)
+// Initialize AWS S3 client
 const s3Client = new S3Client({
-  endpoint: process.env.DO_SPACES_ENDPOINT, // e.g., https://nyc3.digitaloceanspaces.com
-  region: process.env.DO_SPACES_REGION || "us-east-1", // e.g., nyc3
+  region: process.env.AWS_REGION || process.env.AWS_S3_REGION || "us-east-1",
   credentials: {
-    accessKeyId: process.env.DO_SPACES_KEY || "",
-    secretAccessKey: process.env.DO_SPACES_SECRET || "",
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID || "",
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || "",
   },
 });
 
-const BUCKET_NAME = process.env.DO_SPACES_BUCKET || "";
+const BUCKET_NAME = process.env.AWS_S3_BUCKET || "";
 
 export async function generatePresignedUploadUrl(
   fileName: string,
@@ -20,13 +19,14 @@ export async function generatePresignedUploadUrl(
 ): Promise<{ url: string; key: string }> {
   // Generate unique file key
   const timestamp = Date.now();
-  const key = `resumes/${userId}/${timestamp}-${fileName}`;
+  const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
+  const key = `resumes/${userId}/${timestamp}-${sanitizedFileName}`;
 
   const command = new PutObjectCommand({
     Bucket: BUCKET_NAME,
     Key: key,
     ContentType: fileType,
-    ACL: "public-read", // or "private" if you want to control access
+    // Removed ACL to avoid CORS issues - bucket should have default ACL policy
   });
 
   // Generate presigned URL valid for 15 minutes
@@ -36,6 +36,14 @@ export async function generatePresignedUploadUrl(
 }
 
 export function getPublicUrl(key: string): string {
-  return `${process.env.DO_SPACES_CDN_ENDPOINT || process.env.DO_SPACES_ENDPOINT}/${BUCKET_NAME}/${key}`;
+  const region = process.env.AWS_REGION || process.env.AWS_S3_REGION || "us-east-1";
+  const bucket = process.env.AWS_S3_BUCKET || "";
+  
+  // Use CloudFront CDN URL if available, otherwise use S3 direct URL
+  if (process.env.AWS_CLOUDFRONT_URL) {
+    return `${process.env.AWS_CLOUDFRONT_URL}/${key}`;
+  }
+  
+  return `https://${bucket}.s3.${region}.amazonaws.com/${key}`;
 }
 

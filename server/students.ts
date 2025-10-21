@@ -14,7 +14,7 @@ function validateSRN(srn: string): boolean {
   return srnRegex.test(srn);
 }
 
-// Get current user's student profile (auto-creates if doesn't exist)
+// Get current user's student profile (DOES NOT auto-create)
 export async function getStudentProfile() {
   const session = await auth.api.getSession({ headers: await headers() });
   
@@ -22,18 +22,13 @@ export async function getStudentProfile() {
     throw new Error("Unauthorized");
   }
 
-  let profile = await db.query.students.findFirst({
+  const profile = await db.query.students.findFirst({
     where: eq(students.userId, session.user.id),
   });
 
-  // Auto-create profile if it doesn't exist (for OAuth users or migration cases)
+  // Return profile or throw error if not found
   if (!profile) {
-    const [newProfile] = await db.insert(students).values({
-      userId: session.user.id,
-      email: session.user.email,
-      status: "pending",
-    }).returning();
-    profile = newProfile;
+    throw new Error("Student profile not found");
   }
 
   return profile;
@@ -84,6 +79,7 @@ export async function updateStudentProfile(data: Partial<{
   placedIntern: boolean;
   placedFte: boolean;
   resumeUrl: string;
+  resumes: any[];
 }>) {
   const session = await auth.api.getSession({ headers: await headers() });
   
@@ -211,4 +207,3 @@ export async function incrementProfileViews(studentId: string) {
     })
     .where(eq(students.id, studentId));
 }
-

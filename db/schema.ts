@@ -7,7 +7,7 @@ export const user = pgTable("user", {
     email: text('email').notNull().unique(),
     emailVerified: boolean('email_verified').$defaultFn(() => false).notNull(),
     image: text('image'),
-    role: text('role').$defaultFn(() => 'student').notNull(), // student | admin
+    role: text('role').$defaultFn(() => 'student').notNull(), // student | company | admin
     createdAt: timestamp('created_at').$defaultFn(() => /* @__PURE__ */ new Date()).notNull(),
     updatedAt: timestamp('updated_at').$defaultFn(() => /* @__PURE__ */ new Date()).notNull()
 });
@@ -94,4 +94,44 @@ export const studentRelations = relations(students, ({ one }) => ({
 export type Student = typeof students.$inferSelect;
 export type InsertStudent = typeof students.$inferInsert;
 
-export const schema = { user, session, account, verification, students, studentRelations };
+export const companies = pgTable("companies", {
+    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    userId: text('user_id').notNull().unique().references(() => user.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    logoUrl: text('logo_url'),
+    websiteUrl: text('website_url'),
+    location: text('location'),
+    about: text('about'),
+    industry: text('industry'),
+    size: text('size'), // e.g., "1-10", "11-50", "51-200", "201-500", "501-1000", "1000+"
+    contactEmail: text('contact_email').notNull(),
+    contactPhone: text('contact_phone'),
+    linkedinUrl: text('linkedin_url'),
+    twitterUrl: text('twitter_url'),
+    foundedYear: text('founded_year'),
+    specialties: text('specialties').array().$defaultFn(() => []),
+    benefits: jsonb('benefits').$defaultFn(() => []), // Array of benefit strings
+    culture: text('culture'), // Description of company culture
+    techStack: text('tech_stack').array().$defaultFn(() => []),
+    officeLocations: jsonb('office_locations').$defaultFn(() => []), // Array of {city, country, address}
+    verified: boolean('verified').$defaultFn(() => false).notNull(),
+    status: text('status').$defaultFn(() => 'pending').notNull(), // pending | approved | rejected | banned
+    adminNote: text('admin_note'),
+    analytics: jsonb('analytics').$defaultFn(() => ({ profileViews: 0, jobPosts: 0, applications: 0 })),
+    createdAt: timestamp('created_at').$defaultFn(() => /* @__PURE__ */ new Date()).notNull(),
+    updatedAt: timestamp('updated_at').$defaultFn(() => /* @__PURE__ */ new Date()).notNull()
+}, (table) => ({
+    statusCreatedAtIdx: index('idx_companies_status_created_at').on(table.status, table.createdAt.desc())
+}));
+
+export const companyRelations = relations(companies, ({ one }) => ({
+    user: one(user, {
+        fields: [companies.userId],
+        references: [user.id]
+    })
+}));
+
+export type Company = typeof companies.$inferSelect;
+export type InsertCompany = typeof companies.$inferInsert;
+
+export const schema = { user, session, account, verification, students, studentRelations, companies, companyRelations };
