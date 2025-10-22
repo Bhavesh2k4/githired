@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAllStudents } from "@/server/admin";
 import { db } from "@/db/drizzle";
-import { students } from "@/db/schema";
-import { eq, count } from "drizzle-orm";
+import { students, user } from "@/db/schema";
+import { eq, count, ne } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 
@@ -20,19 +20,24 @@ export async function GET(request: NextRequest) {
 
     // If requesting stats
     if (action === "stats") {
-      const total = await db.select({ count: count() }).from(students);
-      const pending = await db.select({ count: count() }).from(students).where(eq(students.status, "pending"));
-      const approved = await db.select({ count: count() }).from(students).where(eq(students.status, "approved"));
-      const rejected = await db.select({ count: count() }).from(students).where(eq(students.status, "rejected"));
-      const banned = await db.select({ count: count() }).from(students).where(eq(students.status, "banned"));
-
-      return NextResponse.json({
-        total: total[0].count,
-        pending: pending[0].count,
-        approved: approved[0].count,
-        rejected: rejected[0].count,
-        banned: banned[0].count,
+      // Get all students with user data to filter out admins
+      const allStudents = await db.query.students.findMany({
+        with: { user: true },
       });
+
+      // Filter out admin users
+      const nonAdminStudents = allStudents.filter(s => s.user.role !== "admin");
+
+      // Calculate stats from filtered list
+      const stats = {
+        total: nonAdminStudents.length,
+        pending: nonAdminStudents.filter(s => s.status === "pending").length,
+        approved: nonAdminStudents.filter(s => s.status === "approved").length,
+        rejected: nonAdminStudents.filter(s => s.status === "rejected").length,
+        banned: nonAdminStudents.filter(s => s.status === "banned").length,
+      };
+
+      return NextResponse.json(stats);
     }
 
     // Get all students

@@ -351,6 +351,71 @@ export default function EditProfilePage() {
             </div>
           </div>
 
+          {/* Academic Information */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t">
+            <div>
+              <Label htmlFor="cgpa">
+                CGPA <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="cgpa"
+                type="number"
+                step="0.01"
+                min="0"
+                max="10"
+                value={profile.cgpa || ""}
+                onChange={(e) => setProfile({ ...profile, cgpa: e.target.value })}
+                placeholder="e.g., 8.5"
+                required
+                className={!profile.cgpa ? "border-red-300" : ""}
+              />
+              {!profile.cgpa && (
+                <p className="text-xs text-red-600 mt-1">⚠️ Required field</p>
+              )}
+            </div>
+            <div>
+              <Label htmlFor="degree">
+                Degree <span className="text-red-500">*</span>
+              </Label>
+              <select
+                id="degree"
+                value={profile.degree || ""}
+                onChange={(e) => setProfile({ ...profile, degree: e.target.value })}
+                className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${!profile.degree ? "border-red-300" : ""}`}
+                required
+              >
+                <option value="">Select Degree</option>
+                <option value="BTech">BTech</option>
+                <option value="MTech">MTech</option>
+                <option value="MCA">MCA</option>
+              </select>
+              {!profile.degree && (
+                <p className="text-xs text-red-600 mt-1">⚠️ Required field</p>
+              )}
+            </div>
+            <div>
+              <Label htmlFor="course">
+                Course <span className="text-red-500">*</span>
+              </Label>
+              <select
+                id="course"
+                value={profile.course || ""}
+                onChange={(e) => setProfile({ ...profile, course: e.target.value })}
+                className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${!profile.course ? "border-red-300" : ""}`}
+                required
+              >
+                <option value="">Select Course</option>
+                <option value="CSE">CSE</option>
+                <option value="ECE">ECE</option>
+                <option value="EEE">EEE</option>
+                <option value="AIML">AIML</option>
+              </select>
+              {!profile.course && (
+                <p className="text-xs text-red-600 mt-1">⚠️ Required field</p>
+              )}
+            </div>
+          </div>
+
           <div>
             <Label htmlFor="headline">Headline</Label>
             <Input

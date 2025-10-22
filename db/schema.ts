@@ -60,6 +60,9 @@ export const students = pgTable("students", {
     bio: text('bio'),
     aboutMe: text('about_me'),
     headline: text('headline'),
+    cgpa: text('cgpa'), // CGPA out of 10
+    degree: text('degree'), // BTech | MTech | MCA
+    course: text('course'), // CSE | ECE | EEE | AIML
     education: jsonb('education').$defaultFn(() => []),
     experience: jsonb('experience').$defaultFn(() => []),
     projects: jsonb('projects').$defaultFn(() => []),
@@ -134,4 +137,86 @@ export const companyRelations = relations(companies, ({ one }) => ({
 export type Company = typeof companies.$inferSelect;
 export type InsertCompany = typeof companies.$inferInsert;
 
-export const schema = { user, session, account, verification, students, studentRelations, companies, companyRelations };
+export const jobs = pgTable("jobs", {
+    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    companyId: text('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+    title: text('title').notNull(),
+    description: text('description').notNull(),
+    type: text('type').notNull(), // internship | full-time
+    location: text('location').notNull(),
+    cgpaCutoff: text('cgpa_cutoff'), // Minimum CGPA required
+    eligibleCourses: text('eligible_courses').array().$defaultFn(() => []), // Array of eligible courses (CSE, ECE, etc.)
+    eligibleDegrees: text('eligible_degrees').array().$defaultFn(() => []), // Array of eligible degrees (BTech, MTech, MCA)
+    jdUrl: text('jd_url'), // Job description PDF URL
+    aboutRole: jsonb('about_role'), // Rich text content (Tiptap JSON)
+    salary: text('salary'), // Salary range or package
+    skills: text('skills').array().$defaultFn(() => []), // Required skills
+    benefits: text('benefits').array().$defaultFn(() => []), // Job benefits
+    status: text('status').$defaultFn(() => 'active').notNull(), // active | stopped
+    analytics: jsonb('analytics').$defaultFn(() => ({ views: 0, applications: 0 })),
+    createdAt: timestamp('created_at').$defaultFn(() => /* @__PURE__ */ new Date()).notNull(),
+    updatedAt: timestamp('updated_at').$defaultFn(() => /* @__PURE__ */ new Date()).notNull()
+}, (table) => ({
+    companyIdIdx: index('idx_jobs_company_id').on(table.companyId),
+    statusCreatedAtIdx: index('idx_jobs_status_created_at').on(table.status, table.createdAt.desc())
+}));
+
+export const jobRelations = relations(jobs, ({ one }) => ({
+    company: one(companies, {
+        fields: [jobs.companyId],
+        references: [companies.id]
+    })
+}));
+
+export type Job = typeof jobs.$inferSelect;
+export type InsertJob = typeof jobs.$inferInsert;
+
+export const applications = pgTable("applications", {
+    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    jobId: text('job_id').notNull().references(() => jobs.id, { onDelete: 'cascade' }),
+    studentId: text('student_id').notNull().references(() => students.id, { onDelete: 'cascade' }),
+    status: text('status').$defaultFn(() => 'pending').notNull(), // pending | oa | interview | selected | rejected
+    appliedAt: timestamp('applied_at').$defaultFn(() => /* @__PURE__ */ new Date()).notNull(),
+    // Snapshot of student data at time of application
+    studentCgpa: text('student_cgpa'),
+    studentCourse: text('student_course'),
+    studentDegree: text('student_degree'),
+    coverLetter: text('cover_letter'),
+    resumeUrl: text('resume_url'), // Specific resume used for this application
+    resumeLabel: text('resume_label'), // Label of the resume chosen by student
+    createdAt: timestamp('created_at').$defaultFn(() => /* @__PURE__ */ new Date()).notNull(),
+    updatedAt: timestamp('updated_at').$defaultFn(() => /* @__PURE__ */ new Date()).notNull()
+}, (table) => ({
+    jobIdIdx: index('idx_applications_job_id').on(table.jobId),
+    studentIdIdx: index('idx_applications_student_id').on(table.studentId),
+    jobStudentUniqueIdx: index('idx_applications_job_student').on(table.jobId, table.studentId)
+}));
+
+export const applicationRelations = relations(applications, ({ one }) => ({
+    job: one(jobs, {
+        fields: [applications.jobId],
+        references: [jobs.id]
+    }),
+    student: one(students, {
+        fields: [applications.studentId],
+        references: [students.id]
+    })
+}));
+
+export type Application = typeof applications.$inferSelect;
+export type InsertApplication = typeof applications.$inferInsert;
+
+export const schema = { 
+    user, 
+    session, 
+    account, 
+    verification, 
+    students, 
+    studentRelations, 
+    companies, 
+    companyRelations,
+    jobs,
+    jobRelations,
+    applications,
+    applicationRelations
+};

@@ -30,7 +30,8 @@ async function checkAdmin() {
 export async function getAllStudents(status?: string) {
   await checkAdmin();
   
-  const query = status
+  // Fetch all students with their user data
+  const allStudents = await (status
     ? db.query.students.findMany({
         where: eq(students.status, status),
         with: { user: true },
@@ -39,16 +40,21 @@ export async function getAllStudents(status?: string) {
     : db.query.students.findMany({
         with: { user: true },
         orderBy: [desc(students.createdAt)],
-      });
+      }));
 
-  return await query;
+  // Filter out users who have admin role
+  return allStudents.filter(student => student.user.role !== "admin");
 }
 
 export async function approveStudent(studentId: string) {
   await checkAdmin();
 
   await db.update(students)
-    .set({ status: "approved", updatedAt: new Date() })
+    .set({ 
+      status: "approved", 
+      srnValid: true, // Auto-verify SRN when approving student
+      updatedAt: new Date() 
+    })
     .where(eq(students.id, studentId));
 
   return { success: true };
@@ -117,7 +123,8 @@ export async function verifySRN(studentId: string, srn: string) {
 export async function getAllCompanies(status?: string) {
   await checkAdmin();
   
-  const query = status
+  // Fetch all companies with their user data
+  const allCompanies = await (status
     ? db.query.companies.findMany({
         where: eq(companies.status, status),
         with: { user: true },
@@ -126,9 +133,10 @@ export async function getAllCompanies(status?: string) {
     : db.query.companies.findMany({
         with: { user: true },
         orderBy: [desc(companies.createdAt)],
-      });
+      }));
 
-  return await query;
+  // Filter out users who have admin role
+  return allCompanies.filter(company => company.user.role !== "admin");
 }
 
 export async function approveCompany(companyId: string) {

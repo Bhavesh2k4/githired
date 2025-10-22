@@ -43,6 +43,8 @@ export async function AppSidebar({
           { title: "Dashboard", url: "/dashboard/admin" },
           { title: "Students", url: "/dashboard/admin/students" },
           { title: "Companies", url: "/dashboard/admin/companies" },
+          { title: "Jobs", url: "/dashboard/admin/jobs" },
+          { title: "Applications", url: "/dashboard/admin/applications" },
         ],
       },
     ];
@@ -68,6 +70,8 @@ export async function AppSidebar({
           { title: "Dashboard", url: "/dashboard" },
           { title: "Profile", url: "/dashboard/profile/edit" },
           { title: "Jobs", url: "/dashboard/jobs" },
+          { title: "Applications", url: "/dashboard/applications" },
+          { title: "Kanban Board", url: "/dashboard/kanban" },
         ],
       },
     ];

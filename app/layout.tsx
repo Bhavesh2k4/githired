@@ -17,9 +17,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "NoteForge - Your Dev Note-Taking App",
+  title: "GitHired - Your AI Powered Job Portal",
   description:
-    "NoteForge is a digital notebook that allows you to take notes, create notebooks, and more.",
+    "GitHired is a digital platform that connects job seekers with AI-powered tools to enhance their job search experience.",
 };
 
 export default function RootLayout({
