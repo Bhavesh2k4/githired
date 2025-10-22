@@ -1,6 +1,6 @@
 import * as React from "react";
 
-import { SearchForm } from "@/components/search-form";
+import { AIAssistantModal } from "@/components/ai-assistant-modal";
 
 import {
   Sidebar,
@@ -94,9 +94,9 @@ export async function AppSidebar({
           </h2>
         </Link>
 
-        <React.Suspense>
-          <SearchForm />
-        </React.Suspense>
+        <div className="px-2 py-2">
+          <AIAssistantModal />
+        </div>
       </SidebarHeader>
       <SidebarContent className="gap-0">
         <SidebarData data={data} />

@@ -11,6 +11,16 @@ import { eq } from "drizzle-orm";
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export const auth = betterAuth({
+    baseURL: process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000",
+    trustedOrigins: [process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"],
+    session: {
+        expiresIn: 60 * 60 * 24 * 7, // 7 days
+        updateAge: 60 * 60 * 24, // 1 day
+        cookieCache: {
+            enabled: true,
+            maxAge: 60 * 60 * 24 * 7, // 7 days
+        },
+    },
     emailVerification: {
         sendVerificationEmail: async ({ user, url }) => {
             try {

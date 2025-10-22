@@ -221,7 +221,7 @@ export default function StudentJobsPage() {
 
       {/* Jobs List */}
       {filteredJobs.length === 0 ? (
-        <Card>
+      <Card>
           <CardHeader className="text-center py-12">
             <Briefcase className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
             <CardTitle>No Jobs Found</CardTitle>
@@ -246,7 +246,7 @@ export default function StudentJobsPage() {
                   eligibility.eligible ? "border-l-4 border-l-green-500" : ""
                 }`}
               >
-                <CardHeader>
+        <CardHeader>
                   <div className="flex items-start justify-between">
                     <div className="space-y-2 flex-1">
                       <div className="flex items-center gap-3">
@@ -291,8 +291,8 @@ export default function StudentJobsPage() {
                         </span>
                       </CardDescription>
                     </div>
-                  </div>
-                </CardHeader>
+          </div>
+        </CardHeader>
                 <CardContent className="space-y-4">
                   <p className="text-sm text-muted-foreground">{job.description}</p>
 
@@ -352,8 +352,8 @@ export default function StudentJobsPage() {
                       {eligibility.eligible ? "Apply Now" : "Not Eligible"}
                     </Button>
                   </div>
-                </CardContent>
-              </Card>
+        </CardContent>
+      </Card>
             );
           })}
         </div>
