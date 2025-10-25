@@ -1,6 +1,6 @@
 import { generateStructuredResponse } from "./gemini-client";
 import { db } from "@/db/drizzle";
-import { students, companies, jobs, applications } from "@/db/schema";
+import { students, companies, jobs, applications, user } from "@/db/schema";
 import { eq, and, sql } from "drizzle-orm";
 
 interface Suggestion {
@@ -222,12 +222,21 @@ export async function generateAdminSuggestions(): Promise<Suggestion[]> {
     const suggestions: Suggestion[] = [];
 
     // Get platform statistics
-    const totalStudents = await db.query.students.findMany();
-    const totalCompanies = await db.query.companies.findMany();
+    const allStudents = await db.query.students.findMany({
+      with: { user: true }
+    });
+    const allCompanies = await db.query.companies.findMany({
+      with: { user: true }
+    });
+    
+    // Filter out admin users from students and companies
+    const totalStudents = allStudents.filter(s => s.user.role !== "admin");
+    const totalCompanies = allCompanies.filter(c => c.user.role !== "admin");
+    
     const totalJobs = await db.query.jobs.findMany();
     const totalApplications = await db.query.applications.findMany();
 
-    // Check for pending approvals
+    // Check for pending approvals (also filter admins)
     const pendingStudents = totalStudents.filter(s => s.status === "pending");
     const pendingCompanies = totalCompanies.filter(c => c.status === "pending");
 

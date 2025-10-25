@@ -3,7 +3,7 @@
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { db } from "@/db/drizzle";
-import { aiQueries, students, companies } from "@/db/schema";
+import { aiQueries, students, companies, user } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { convertQueryToSQL, generateInsights } from "@/lib/ai/query-generator";
 import { validateSQL, sanitizeSQL, addRoleBasedFilters, SQLValidationError } from "@/lib/ai/sql-validator";
@@ -26,26 +26,35 @@ async function getAuthContext() {
     throw new Error("Unauthorized");
   }
 
-  const user = session.user;
+  // Fetch user from database to get the actual role
+  const currentUser = await db.query.user.findFirst({
+    where: eq(user.id, session.user.id)
+  });
+
+  if (!currentUser) {
+    throw new Error("User not found");
+  }
+
+  const userRole = currentUser.role as "student" | "company" | "admin";
   let studentId: string | undefined;
   let companyId: string | undefined;
 
-  if (user.role === "student") {
+  if (userRole === "student") {
     const student = await db.query.students.findFirst({
-      where: eq(students.userId, user.id)
+      where: eq(students.userId, session.user.id)
     });
     studentId = student?.id;
-  } else if (user.role === "company") {
+  } else if (userRole === "company") {
     const company = await db.query.companies.findFirst({
-      where: eq(companies.userId, user.id)
+      where: eq(companies.userId, session.user.id)
     });
     companyId = company?.id;
   }
 
   return {
-    user,
-    userId: user.id,
-    role: user.role as "student" | "company" | "admin",
+    user: session.user,
+    userId: session.user.id,
+    role: userRole,
     studentId,
     companyId
   };

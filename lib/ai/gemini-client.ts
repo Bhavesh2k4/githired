@@ -6,7 +6,9 @@ if (!process.env.GEMINI_API_KEY) {
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-export const geminiModel = genAI.getGenerativeModel({ model: "gemini-pro" });
+// Using Gemini 2.0 Flash (experimental) - the newest and fastest model
+// This is the only model that works with your current API key
+export const geminiModel = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
 
 export async function generateCompletion(prompt: string): Promise<string> {
   try {
@@ -34,9 +36,18 @@ export async function generateStructuredResponse<T>(
     const jsonText = jsonMatch ? (jsonMatch[1] || jsonMatch[0]) : text;
     
     return JSON.parse(jsonText);
-  } catch (error) {
+  } catch (error: any) {
     console.error("Gemini Structured Response Error:", error);
-    throw new Error("Failed to generate structured AI response");
+    
+    // Check if it's a model not found error
+    if (error.message?.includes("404") || error.message?.includes("not found")) {
+      throw new Error(
+        "Gemini API Error: Model not found. Please check your GEMINI_API_KEY and try one of these models: " +
+        "gemini-1.5-flash-latest, gemini-1.5-pro-latest, or gemini-2.0-flash-exp"
+      );
+    }
+    
+    throw new Error("Failed to generate AI response: " + (error.message || "Unknown error"));
   }
 }
 

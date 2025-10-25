@@ -94,6 +94,11 @@ function buildPrompt(naturalQuery: string, role: string, context: {
   companyId?: string;
 }): string {
   const permissions = ROLE_PERMISSIONS[role];
+  
+  if (!permissions) {
+    throw new Error(`Invalid role: ${role}. Must be student, company, or admin.`);
+  }
+  
   const allowedTables = Object.keys(permissions).filter(t => permissions[t].allowed);
 
   return `You are a PostgreSQL SQL expert. Convert the following natural language query to a valid PostgreSQL SELECT query.
@@ -145,6 +150,10 @@ export async function convertQueryToSQL(
     companyId?: string;
   }
 ): Promise<QueryResponse> {
+  if (!naturalQuery || naturalQuery.trim().length === 0) {
+    throw new Error("Query cannot be empty");
+  }
+
   const prompt = buildPrompt(naturalQuery, role, context);
   
   const schema = `{
@@ -160,10 +169,16 @@ export async function convertQueryToSQL(
 
   try {
     const response = await generateStructuredResponse<QueryResponse>(prompt, schema);
+    
+    if (!response || !response.sql) {
+      throw new Error("Invalid response from AI - missing SQL query");
+    }
+    
     return response;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Query generation error:", error);
-    throw new Error("Failed to convert natural language to SQL. Please try rephrasing your question.");
+    const errorMessage = error.message || "Failed to convert natural language to SQL. Please try rephrasing your question.";
+    throw new Error(errorMessage);
   }
 }
 

@@ -256,6 +256,55 @@ export const queryTemplates = pgTable("query_templates", {
 export type QueryTemplate = typeof queryTemplates.$inferSelect;
 export type InsertQueryTemplate = typeof queryTemplates.$inferInsert;
 
+// ATS Scans Table - Resume analysis history
+export const atsScans = pgTable("ats_scans", {
+    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    studentId: text('student_id').notNull().references(() => students.id, { onDelete: 'cascade' }),
+    resumeUrl: text('resume_url').notNull(),
+    resumeLabel: text('resume_label'),
+    score: text('score').notNull(), // Score out of 100
+    analysis: jsonb('analysis').notNull(), // Full Gemini analysis
+    jobDescription: text('job_description'), // Optional JD
+    matchedKeywords: text('matched_keywords').array().$defaultFn(() => []), // Keywords found
+    missingKeywords: text('missing_keywords').array().$defaultFn(() => []), // Keywords missing
+    suggestions: jsonb('suggestions').$defaultFn(() => []), // Improvement suggestions
+    createdAt: timestamp('created_at').$defaultFn(() => /* @__PURE__ */ new Date()).notNull()
+}, (table) => ({
+    studentIdIdx: index('idx_ats_scans_student').on(table.studentId),
+    createdAtIdx: index('idx_ats_scans_created').on(table.createdAt.desc())
+}));
+
+export const atsScansRelations = relations(atsScans, ({ one }) => ({
+    student: one(students, {
+        fields: [atsScans.studentId],
+        references: [students.id]
+    })
+}));
+
+export type ATSScan = typeof atsScans.$inferSelect;
+export type InsertATSScan = typeof atsScans.$inferInsert;
+
+// Profile Suggestions Cache Table
+export const profileSuggestions = pgTable("profile_suggestions", {
+    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    studentId: text('student_id').notNull().unique().references(() => students.id, { onDelete: 'cascade' }),
+    suggestions: jsonb('suggestions').notNull(), // Array of suggestion objects
+    lastGenerated: timestamp('last_generated').$defaultFn(() => /* @__PURE__ */ new Date()).notNull(),
+    updatedAt: timestamp('updated_at').$defaultFn(() => /* @__PURE__ */ new Date()).notNull()
+}, (table) => ({
+    studentIdIdx: index('idx_profile_suggestions_student').on(table.studentId)
+}));
+
+export const profileSuggestionsRelations = relations(profileSuggestions, ({ one }) => ({
+    student: one(students, {
+        fields: [profileSuggestions.studentId],
+        references: [students.id]
+    })
+}));
+
+export type ProfileSuggestion = typeof profileSuggestions.$inferSelect;
+export type InsertProfileSuggestion = typeof profileSuggestions.$inferInsert;
+
 export const schema = { 
     user, 
     session, 
@@ -271,5 +320,9 @@ export const schema = {
     applicationRelations,
     aiQueries,
     aiQueriesRelations,
-    queryTemplates
+    queryTemplates,
+    atsScans,
+    atsScansRelations,
+    profileSuggestions,
+    profileSuggestionsRelations
 };

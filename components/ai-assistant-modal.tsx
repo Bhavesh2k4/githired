@@ -156,7 +156,10 @@ export function AIAssistantModal() {
   };
 
   const exportData = () => {
-    if (!result?.data) return;
+    if (!result?.data || result.data.length === 0) {
+      toast.error("No data to export");
+      return;
+    }
 
     const csv = [
       Object.keys(result.data[0]).join(","),
@@ -190,7 +193,7 @@ export function AIAssistantModal() {
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogContent className="max-w-[95vw] w-[1400px] max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-primary" />
@@ -247,7 +250,7 @@ export function AIAssistantModal() {
                         className="bg-white dark:bg-gray-900 rounded-md p-3 border border-gray-200 dark:border-gray-700"
                       >
                         <div className="flex items-start gap-2">
-                          <div className={`mt-1 px-2 py-0.5 rounded text-xs font-medium ${
+                          <div className={`mt-1 px-2 py-0.5 rounded text-xs font-medium whitespace-nowrap flex-shrink-0 ${
                             suggestion.priority === "high"
                               ? "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"
                               : suggestion.priority === "medium"
@@ -256,11 +259,11 @@ export function AIAssistantModal() {
                           }`}>
                             {suggestion.priority}
                           </div>
-                          <div className="flex-1">
-                            <div className="font-semibold text-sm mb-1">
+                          <div className="flex-1 min-w-0">
+                            <div className="font-semibold text-sm mb-1 break-words">
                               {suggestion.title}
                             </div>
-                            <div className="text-xs text-muted-foreground">
+                            <div className="text-xs text-muted-foreground break-words">
                               {suggestion.description}
                             </div>
                           </div>
@@ -277,19 +280,19 @@ export function AIAssistantModal() {
                   <h3 className="font-semibold mb-3 text-sm text-muted-foreground">
                     {category}
                   </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                     {templates
                       .filter((t) => t.category === category)
                       .map((template) => (
                         <Button
                           key={template.id}
                           variant="outline"
-                          className="h-auto p-4 flex flex-col items-start text-left hover:bg-accent"
+                          className="h-auto p-4 flex flex-col items-start text-left hover:bg-accent whitespace-normal"
                           onClick={() => handleTemplateClick(template)}
                           disabled={loading}
                         >
-                          <div className="font-semibold mb-1">{template.name}</div>
-                          <div className="text-xs text-muted-foreground">
+                          <div className="font-semibold mb-1 w-full overflow-hidden text-ellipsis line-clamp-2">{template.name}</div>
+                          <div className="text-xs text-muted-foreground w-full overflow-hidden text-ellipsis line-clamp-2">
                             {template.description}
                           </div>
                         </Button>
