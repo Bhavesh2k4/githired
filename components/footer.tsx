@@ -10,14 +10,20 @@ export default function Footer() {
           aria-label="go home"
           className="mx-auto size-fit flex items-center gap-2"
         >
-          <Image src="/noteforge-logo.png" alt="logo" width={60} height={60} />
+          <Image 
+            src="/noteforge-logo.png" 
+            alt="GitHired logo" 
+            width={48} 
+            height={48} 
+            className="rounded-xl"
+          />
 
-          <span className="text-2xl font-bold">Noteforge</span>
+          <span className="text-2xl font-bold">GitHired</span>
         </Link>
 
         <span className="text-muted-foreground block text-center text-sm">
           {" "}
-          © {new Date().getFullYear()} NoteForge, All rights reserved
+          © {new Date().getFullYear()} GitHired, All rights reserved
         </span>
       </div>
     </footer>

@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { User, Briefcase, ShieldCheck } from "lucide-react";
+import { User, Briefcase, BarChart3 } from "lucide-react";
 import { ReactNode } from "react";
 
 export default function Features() {
@@ -53,16 +53,16 @@ export default function Features() {
           <Card className="group bg-background">
             <CardHeader className="pb-3">
               <CardDecorator>
-                <ShieldCheck className="size-6" aria-hidden />
+                <BarChart3 className="size-6" aria-hidden />
               </CardDecorator>
 
-              <h3 className="mt-6 font-medium">Verified Profiles</h3>
+              <h3 className="mt-6 font-medium">AI-Powered Insights</h3>
             </CardHeader>
 
             <CardContent>
               <p className="mt-3 text-sm">
-                Admin-verified student profiles ensure authenticity and build
-                trust with recruiters.
+                Get ATS resume analysis, track applications with Kanban boards,
+                and compare yourself with peers.
               </p>
             </CardContent>
           </Card>

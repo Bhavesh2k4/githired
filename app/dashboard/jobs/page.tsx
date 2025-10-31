@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Briefcase, MapPin, DollarSign, Clock, Building2, CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { Briefcase, MapPin, DollarSign, Clock, Building2, CheckCircle, XCircle, Loader2, FileText, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -15,6 +15,58 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+
+// Helper function to render Tiptap JSON content as HTML
+const renderAboutRole = (aboutRole: any) => {
+  if (!aboutRole) return null;
+  
+  try {
+    // If it's a Tiptap JSON structure
+    if (aboutRole.type === 'doc' && aboutRole.content) {
+      return aboutRole.content.map((node: any, index: number) => {
+        if (node.type === 'paragraph') {
+          const text = node.content?.map((c: any) => c.text).join('') || '';
+          return <p key={index} className="mb-2">{text}</p>;
+        }
+        if (node.type === 'heading') {
+          const text = node.content?.map((c: any) => c.text).join('') || '';
+          const level = node.attrs?.level || 1;
+          const Tag = `h${level}` as keyof JSX.IntrinsicElements;
+          return <Tag key={index} className="font-bold mt-3 mb-2">{text}</Tag>;
+        }
+        if (node.type === 'bulletList') {
+          return (
+            <ul key={index} className="list-disc list-inside mb-2 space-y-1">
+              {node.content?.map((item: any, i: number) => {
+                const text = item.content?.[0]?.content?.map((c: any) => c.text).join('') || '';
+                return <li key={i}>{text}</li>;
+              })}
+            </ul>
+          );
+        }
+        if (node.type === 'orderedList') {
+          return (
+            <ol key={index} className="list-decimal list-inside mb-2 space-y-1">
+              {node.content?.map((item: any, i: number) => {
+                const text = item.content?.[0]?.content?.map((c: any) => c.text).join('') || '';
+                return <li key={i}>{text}</li>;
+              })}
+            </ol>
+          );
+        }
+        return null;
+      });
+    }
+    // If it's already a string, just display it
+    if (typeof aboutRole === 'string') {
+      return <p>{aboutRole}</p>;
+    }
+    return <p className="text-muted-foreground">Content format not recognized</p>;
+  } catch (error) {
+    console.error('Error rendering aboutRole:', error);
+    return <p className="text-muted-foreground">Unable to display content</p>;
+  }
+};
 
 export default function StudentJobsPage() {
   const [jobs, setJobs] = useState<any[]>([]);
@@ -294,7 +346,33 @@ export default function StudentJobsPage() {
           </div>
         </CardHeader>
                 <CardContent className="space-y-4">
-                  <p className="text-sm text-muted-foreground">{job.description}</p>
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground">{job.description}</p>
+                    
+                    {/* About Role - Show preview or full content */}
+                    {job.aboutRole && (
+                      <div className="mt-2 p-3 border rounded-lg bg-muted/20">
+                        <p className="text-xs font-semibold mb-2 text-muted-foreground">About the Role:</p>
+                        <div className="text-sm prose prose-sm dark:prose-invert max-w-none">
+                          {renderAboutRole(job.aboutRole)}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Job Description PDF Link */}
+                    {job.jdUrl && (
+                      <a
+                        href={job.jdUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:underline"
+                      >
+                        <FileText className="w-4 h-4" />
+                        View Full Job Description (PDF)
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    )}
+                  </div>
 
                   {!eligibility.eligible && (
                     <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded p-3">
@@ -361,7 +439,7 @@ export default function StudentJobsPage() {
 
       {/* Application Dialog */}
       <Dialog open={!!selectedJob} onOpenChange={(open) => !open && setSelectedJob(null)}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Apply for {selectedJob?.job.title}</DialogTitle>
             <DialogDescription>
@@ -370,6 +448,37 @@ export default function StudentJobsPage() {
           </DialogHeader>
 
           <div className="space-y-4 py-4">
+            {/* Job Details Section */}
+            <div className="border rounded-lg p-4 space-y-3 bg-muted/30">
+              <h3 className="font-semibold text-sm">Job Details</h3>
+              <div className="text-sm space-y-2">
+                <p className="text-muted-foreground">{selectedJob?.job.description}</p>
+                
+                {/* About Role Rich Text Content */}
+                {selectedJob?.job.aboutRole && (
+                  <div className="mt-3 pt-3 border-t">
+                    <p className="font-medium mb-2">About the Role:</p>
+                    <div className="prose prose-sm dark:prose-invert max-w-none">
+                      {renderAboutRole(selectedJob.job.aboutRole)}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Job Description PDF Link */}
+                {selectedJob?.job.jdUrl && (
+                  <a
+                    href={selectedJob.job.jdUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:underline mt-2"
+                  >
+                    <FileText className="w-4 h-4" />
+                    View Full Job Description (PDF)
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                )}
+              </div>
+            </div>
             <div>
               <Label htmlFor="resumeSelect">Select Resume *</Label>
               <select

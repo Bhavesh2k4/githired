@@ -54,23 +54,43 @@ YOUR TASK:
 Provide ${hasJD ? 'targeted ATS analysis based on the job description' : 'general ATS best practices and optimization tips'}:
 
 1. **ATS Score (0-100)**: 
-   ${hasJD ? '- Provide a score based on how well a resume should be structured for this type of role' : '- Provide a baseline score of 75 for general best practices'}
-   - Consider: standard formatting, keyword optimization, structure
+   ${hasJD ? '- Provide a realistic score based on how well a resume should be structured for this type of role' : '- Provide a realistic score based on general best practices'}
+   - Consider: standard formatting, keyword optimization, structure, completeness
+   - IMPORTANT: Use the FULL range (0-100) based on actual resume quality
+   - Score Guidelines:
+     * 0-40: Poor/Horrible - Major formatting issues, missing sections, unprofessional
+     * 40-60: Below Average - Basic structure but lacking keywords, weak formatting
+     * 60-75: Average - Decent structure, some optimization needed
+     * 75-85: Good - Well-structured, good keywords, minor improvements needed
+     * 85-95: Excellent - Highly optimized, strong keywords, professional formatting
+     * 95-100: Outstanding - Perfect ATS optimization, ideal structure and content
 
 2. **Keyword Analysis**:
    ${hasJD ? `- Extract 5-10 key technical skills, tools, and qualifications from the job description
    - These are keywords the candidate should include in their resume` : `- DO NOT suggest missing keywords without a job description
    - Instead, suggest checking for: relevant technical skills, action verbs, quantifiable achievements`}
 
-3. **Formatting Score (85/100)** and General Issues:
+3. **Formatting Score (0-100)** - Use full range based on quality:
    - Standard best practices: use simple formatting, avoid tables/columns
    - Use standard section headings: Experience, Education, Skills, Projects
    - Avoid: images, graphics, headers/footers, multiple columns
+   - Score Guidelines:
+     * 0-40: Poor - Multiple columns, graphics, ATS-incompatible format
+     * 40-60: Below Average - Some formatting issues, inconsistent structure
+     * 60-75: Average - Decent formatting with some issues
+     * 75-85: Good - Clean, ATS-friendly with minor issues
+     * 85-100: Excellent - Perfect ATS formatting, clean and professional
 
-4. **Content Score (80/100)** and General Advice:
+4. **Content Score (0-100)** - Use full range based on quality:
    - Use action verbs (Developed, Implemented, Led, etc.)
    - Include quantifiable achievements (increased by X%, reduced by Y)
    - Ensure all sections are complete and well-organized
+   - Score Guidelines:
+     * 0-40: Poor - Vague descriptions, no achievements, missing sections
+     * 40-60: Below Average - Basic descriptions, few accomplishments
+     * 60-75: Average - Decent content but lacking impact
+     * 75-85: Good - Strong action verbs, some quantifiable results
+     * 85-100: Excellent - Compelling content, quantified achievements throughout
 
 5. **Strengths**: 3-5 general strengths of well-formatted resumes
 
@@ -80,7 +100,18 @@ Provide ${hasJD ? 'targeted ATS analysis based on the job description' : 'genera
 
 ${hasJD ? 'Focus your analysis on keywords and skills from the job description.' : 'Focus on general best practices. DO NOT list missing keywords without a job description.'}
 
-Be practical, specific, and encouraging.`;
+CRITICAL SCORING RULES:
+- Use the ENTIRE 0-100 scale based on actual quality
+- Do NOT cluster all scores in 65-80 range
+- A truly bad resume should score 30-50
+- An average resume should score 60-75
+- A good resume should score 75-85
+- An excellent resume should score 85-95
+- Only near-perfect resumes should score 95+
+- Be honest and realistic - vary scores significantly based on quality
+
+Be practical, specific, and encouraging in your feedback.`;
+
 }
 
 function buildATSSchema(): string {

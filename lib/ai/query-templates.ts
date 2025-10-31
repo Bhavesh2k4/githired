@@ -69,6 +69,46 @@ export const STUDENT_TEMPLATES: QueryTemplateDefinition[] = [
     prompt: "Show my applications over time, grouped by week for the last 2 months. Include total applications per week.",
     chartType: "line",
     sortOrder: 6
+  },
+  {
+    id: "student-salary-insights",
+    role: "student",
+    category: "Market Insights",
+    name: "Salary trends in my field",
+    description: "Average salaries for jobs matching your course/degree",
+    prompt: "Show salary distribution for jobs that match my course and degree. Group by salary ranges and show average, min, and max salaries.",
+    chartType: "bar",
+    sortOrder: 7
+  },
+  {
+    id: "student-company-rankings",
+    role: "student",
+    category: "Job Recommendations",
+    name: "Top companies hiring now",
+    description: "Most active companies with job openings",
+    prompt: "Show top 10 companies with most active job postings. Include company name, number of active jobs, average salary offered, and total applications received.",
+    chartType: "table",
+    sortOrder: 8
+  },
+  {
+    id: "student-peer-cgpa",
+    role: "student",
+    category: "Profile Analysis",
+    name: "CGPA vs peers in my course",
+    description: "Compare your CGPA with others in your course",
+    prompt: "Compare my CGPA with other students in my course. Show distribution of CGPAs in my course, my percentile, and average CGPA.",
+    chartType: "metric",
+    sortOrder: 9
+  },
+  {
+    id: "student-skill-gaps",
+    role: "student",
+    category: "Market Insights",
+    name: "Skills I'm missing",
+    description: "Find skills required in jobs that you don't have",
+    prompt: "Analyze active jobs I'm eligible for and identify the top 10 skills I don't have yet. Show skill name and how many jobs require it.",
+    chartType: "bar",
+    sortOrder: 10
   }
 ];
 
@@ -132,6 +172,36 @@ export const COMPANY_TEMPLATES: QueryTemplateDefinition[] = [
     prompt: "Show distribution of applicants by their course (CSE, ECE, EEE, AIML, etc.). Include count and percentage for each course.",
     chartType: "pie",
     sortOrder: 6
+  },
+  {
+    id: "company-time-to-hire",
+    role: "company",
+    category: "Hiring Analytics",
+    name: "Average time to hire",
+    description: "Time taken from application to selection",
+    prompt: "Calculate average time between application submission and selection for successful candidates. Show overall average and breakdown by job title.",
+    chartType: "bar",
+    sortOrder: 7
+  },
+  {
+    id: "company-rejection-reasons",
+    role: "company",
+    category: "Hiring Analytics",
+    name: "Application rejection analysis",
+    description: "Where candidates drop off in your hiring funnel",
+    prompt: "Analyze rejection patterns: show percentage of candidates rejected at each stage (pending, oa, interview). Identify at which stage most rejections occur.",
+    chartType: "funnel",
+    sortOrder: 8
+  },
+  {
+    id: "company-competitive-salary",
+    role: "company",
+    category: "Market Insights",
+    name: "Your salary vs market",
+    description: "Compare your salary offerings with similar jobs",
+    prompt: "Compare the average salary you offer vs market average for similar job types and roles. Show your average vs overall platform average.",
+    chartType: "bar",
+    sortOrder: 9
   }
 ];
 
@@ -215,6 +285,46 @@ export const ADMIN_TEMPLATES: QueryTemplateDefinition[] = [
     prompt: "Analyze salary offerings across all jobs. Show distribution by salary ranges (in INR): <3L, 3-5L, 5-7L, 7-10L, 10-15L, >15L. Include job count for each range and calculate average salary overall.",
     chartType: "bar",
     sortOrder: 8
+  },
+  {
+    id: "admin-engagement-metrics",
+    role: "admin",
+    category: "Platform Stats",
+    name: "User engagement metrics",
+    description: "Active users and engagement rates",
+    prompt: "Calculate platform engagement: percentage of students who have applied to jobs, percentage of companies who have posted jobs, average applications per active student, average jobs per active company.",
+    chartType: "metric",
+    sortOrder: 9
+  },
+  {
+    id: "admin-top-students",
+    role: "admin",
+    category: "Placement Analytics",
+    name: "Top performing students",
+    description: "Students with highest selection rates",
+    prompt: "Find top 10 students by application success rate (minimum 5 applications). Show student SRN, CGPA, course, total applications, selections, and success rate percentage.",
+    chartType: "table",
+    sortOrder: 10
+  },
+  {
+    id: "admin-job-type-trends",
+    role: "admin",
+    category: "Platform Stats",
+    name: "Internship vs Full-time trends",
+    description: "Compare internship and full-time job postings",
+    prompt: "Compare internship vs full-time jobs over last 3 months. Show weekly trends for both types, including application rates for each.",
+    chartType: "line",
+    sortOrder: 11
+  },
+  {
+    id: "admin-inactive-users",
+    role: "admin",
+    category: "Platform Stats",
+    name: "Inactive users report",
+    description: "Users who haven't engaged recently",
+    prompt: "Identify inactive users: students who haven't applied in 30+ days and companies who haven't posted jobs in 60+ days. Show counts and percentages.",
+    chartType: "metric",
+    sortOrder: 12
   }
 ];
 

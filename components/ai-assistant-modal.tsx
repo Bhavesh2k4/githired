@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DynamicChart } from "@/components/charts/dynamic-chart";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { Sparkles, Search, History, X, Download } from "lucide-react";
+import { Sparkles, Search, History, X, Download, Code2, Info } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 
 interface Template {
@@ -25,6 +25,9 @@ interface QueryResult {
   chartType?: string;
   visualization?: any;
   error?: string;
+  sql?: string;
+  explanation?: string;
+  executionTime?: string;
 }
 
 export function AIAssistantModal() {
@@ -37,6 +40,7 @@ export function AIAssistantModal() {
   const [history, setHistory] = useState<any[]>([]);
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [selectedTab, setSelectedTab] = useState("templates");
+  const [showSQL, setShowSQL] = useState(false);
 
   // Keyboard shortcut: Cmd/Ctrl + K
   useEffect(() => {
@@ -314,11 +318,49 @@ export function AIAssistantModal() {
                 <div className="space-y-6">
                   {result.success ? (
                     <>
+                      {/* SQL Query Display */}
+                      {result.sql && (
+                        <div className="border rounded-lg overflow-hidden">
+                          <button
+                            onClick={() => setShowSQL(!showSQL)}
+                            className="w-full flex items-center justify-between bg-muted/50 px-4 py-3 hover:bg-muted transition-colors"
+                          >
+                            <div className="flex items-center gap-2">
+                              <Code2 className="h-4 w-4" />
+                              <span className="font-semibold text-sm">Generated SQL Query</span>
+                              {result.executionTime && (
+                                <span className="text-xs text-muted-foreground">
+                                  • Executed in {result.executionTime}
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-xs text-muted-foreground">
+                              {showSQL ? "Hide" : "Show"} query
+                            </span>
+                          </button>
+                          {showSQL && (
+                            <div className="p-4 bg-slate-950 dark:bg-slate-900">
+                              <pre className="text-xs text-slate-50 overflow-x-auto">
+                                <code>{result.sql}</code>
+                              </pre>
+                              {result.explanation && (
+                                <div className="mt-3 pt-3 border-t border-slate-700">
+                                  <div className="flex items-start gap-2 text-slate-300">
+                                    <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                                    <p className="text-xs">{result.explanation}</p>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
                       {/* Insights */}
                       {result.insights && (
-                        <div className="bg-muted/50 rounded-lg p-4">
+                        <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
                           <h3 className="font-semibold mb-2 flex items-center gap-2">
-                            <Sparkles className="h-4 w-4" />
+                            <Sparkles className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                             Key Insights
                           </h3>
                           <div className="prose prose-sm max-w-none dark:prose-invert">

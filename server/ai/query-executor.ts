@@ -18,6 +18,9 @@ interface QueryExecutionResult {
   visualization?: any;
   error?: string;
   queryId?: string;
+  sql?: string; // Add SQL query for transparency
+  explanation?: string; // Add explanation
+  executionTime?: string; // Add execution time
 }
 
 async function getAuthContext() {
@@ -161,7 +164,10 @@ export async function executeAIQuery(
       insights,
       chartType,
       visualization,
-      queryId: savedQuery.id
+      queryId: savedQuery.id,
+      sql: sqlQuery,
+      explanation,
+      executionTime
     };
 
   } catch (error: any) {

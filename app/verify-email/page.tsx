@@ -15,11 +15,19 @@ export default function VerifyEmailPage() {
   const handleResend = async () => {
     setResending(true);
     try {
-      // TODO: Implement resend verification email endpoint
-      toast.info("Verification email functionality coming soon");
-      // For now, just show a message
-      toast.success("Check your email for the verification link");
+      const response = await fetch("/api/auth/resend-verification", {
+        method: "POST",
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast.success("Verification email sent! Check your inbox.");
+      } else {
+        toast.error(data.error || "Failed to resend verification email");
+      }
     } catch (error) {
+      console.error("Error resending verification email:", error);
       toast.error("Failed to resend verification email");
     } finally {
       setResending(false);

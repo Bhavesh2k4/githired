@@ -209,10 +209,27 @@ export async function getJobApplications(jobId: string) {
       const studentSkills = app.student.skills || [];
       let skillsMatch = 0;
       
-      if (jobSkills.length > 0) {
-        const matchingSkills = jobSkills.filter((skill: string) =>
-          studentSkills.some((s: string) => s.toLowerCase().includes(skill.toLowerCase()))
-        );
+      if (jobSkills.length > 0 && studentSkills.length > 0) {
+        // Normalize skills for better matching
+        const normalizeSkill = (skill: string) => 
+          skill.toLowerCase().trim().replace(/[.\-\s]/g, '');
+        
+        const normalizedJobSkills = jobSkills.map(normalizeSkill);
+        const normalizedStudentSkills = studentSkills.map(normalizeSkill);
+        
+        // Count matches with bidirectional fuzzy matching
+        const matchingSkills = jobSkills.filter((jobSkill: string, index: number) => {
+          const normalizedJobSkill = normalizedJobSkills[index];
+          
+          return studentSkills.some((studentSkill: string, sIndex: number) => {
+            const normalizedStudentSkill = normalizedStudentSkills[sIndex];
+            
+            // Bidirectional substring matching (handles JS/JavaScript, React/ReactJS, etc.)
+            return normalizedJobSkill.includes(normalizedStudentSkill) || 
+                   normalizedStudentSkill.includes(normalizedJobSkill);
+          });
+        });
+        
         skillsMatch = (matchingSkills.length / jobSkills.length) * 100;
       }
 

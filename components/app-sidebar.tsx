@@ -88,11 +88,11 @@ export async function AppSidebar({
     <Sidebar {...props}>
       <SidebarHeader>
         <Link href="/dashboard" className="flex items-center gap-2 pl-2">
-          <Image src="/noteforge-logo.png" alt="Logo" width={32} height={32} />
+          <Image src="/noteforge-logo.png" alt="GitHired Logo" width={32} height={32} className="rounded-lg" />
           <h2>
-            {userRole === "admin" ? "Admin Portal" : 
-             userRole === "company" ? "Company Portal" : 
-             "Job Portal"}
+            {userRole === "admin" ? "GitHired Admin" : 
+             userRole === "company" ? "GitHired Company" : 
+             "GitHired"}
           </h2>
         </Link>
 

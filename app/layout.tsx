@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "GitHired - Your AI Powered Job Portal",
+  title: "GitHired - Job Portal with AI Insights",
   description:
     "GitHired is a digital platform that connects job seekers with AI-powered tools to enhance their job search experience.",
 };

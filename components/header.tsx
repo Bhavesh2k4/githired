@@ -42,12 +42,13 @@ export const HeroHeader = () => {
               >
                 <Image
                   src="/noteforge-logo.png"
-                  alt="logo"
-                  width={60}
-                  height={60}
+                  alt="GitHired logo"
+                  width={48}
+                  height={48}
+                  className="rounded-xl"
                 />
 
-                <span className="text-2xl font-bold">NoteForge</span>
+                <span className="text-2xl font-bold">GitHired</span>
               </Link>
 
               <button
@@ -93,7 +94,7 @@ export const HeroHeader = () => {
               <div className="flex w-full flex-col space-y-3 sm:flex-row sm:gap-3 sm:space-y-0 md:w-fit">
                 <div className="flex items-center">
                   <Link
-                    href="https://github.com/TheOrcDev/noteforge"
+                    href="https://github.com/Bhavesh2k4/githired"
                     target="_blank"
                   >
                     <Button
