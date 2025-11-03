@@ -1,4 +1,5 @@
 import { generateStructuredResponse } from "./gemini-client";
+import pdf from "pdf-parse";
 
 export interface ATSAnalysis {
   score: number; // 0-100
@@ -17,12 +18,39 @@ export interface ATSAnalysis {
   };
 }
 
+async function extractTextFromPDF(resumeUrl: string): Promise<string> {
+  try {
+    // Fetch the PDF
+    const response = await fetch(resumeUrl);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch PDF: ${response.statusText}`);
+    }
+    
+    // Get the PDF as a buffer
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    
+    // Parse the PDF
+    const data = await pdf(buffer);
+    
+    return data.text;
+  } catch (error: any) {
+    console.error("PDF extraction error:", error);
+    throw new Error("Failed to extract text from PDF: " + error.message);
+  }
+}
+
 export async function analyzeResumeATS(
   resumeUrl: string,
   jobDescription?: string
 ): Promise<ATSAnalysis> {
   try {
-    const prompt = buildATSPrompt(resumeUrl, jobDescription);
+    // Extract text from the PDF
+    console.log("Extracting text from PDF:", resumeUrl);
+    const resumeText = await extractTextFromPDF(resumeUrl);
+    console.log("Extracted text length:", resumeText.length);
+    
+    const prompt = buildATSPrompt(resumeText, jobDescription);
     const schema = buildATSSchema();
     
     const response = await generateStructuredResponse<ATSAnalysis>(prompt, schema);
@@ -39,23 +67,27 @@ export async function analyzeResumeATS(
   }
 }
 
-function buildATSPrompt(resumeUrl: string, jobDescription?: string): string {
+function buildATSPrompt(resumeText: string, jobDescription?: string): string {
   const hasJD = !!jobDescription;
   
   return `You are an expert ATS (Applicant Tracking System) analyzer and resume consultant. 
 
-IMPORTANT: Since you cannot directly access PDF files, I need you to provide GENERAL ATS optimization advice based on best practices.
+RESUME CONTENT (EXTRACTED FROM PDF):
+"""
+${resumeText}
+"""
 
-CONTEXT:
-- Resume File: ${resumeUrl}
-${hasJD ? `- Job Description:\n${jobDescription}\n` : '- No specific job description provided'}
+${hasJD ? `JOB DESCRIPTION:
+"""
+${jobDescription}
+"""` : 'No specific job description provided'}
 
 YOUR TASK:
-Provide ${hasJD ? 'targeted ATS analysis based on the job description' : 'general ATS best practices and optimization tips'}:
+Analyze the ACTUAL resume content above and provide ${hasJD ? 'targeted analysis comparing it against the job description' : 'general ATS optimization feedback'}:
 
 1. **ATS Score (0-100)**: 
-   ${hasJD ? '- Provide a realistic score based on how well a resume should be structured for this type of role' : '- Provide a realistic score based on general best practices'}
-   - Consider: standard formatting, keyword optimization, structure, completeness
+   - Analyze the ACTUAL resume structure, formatting, and content quality
+   - ${hasJD ? 'Compare keywords in resume against job description requirements' : 'Evaluate based on general best practices'}
    - IMPORTANT: Use the FULL range (0-100) based on actual resume quality
    - Score Guidelines:
      * 0-40: Poor/Horrible - Major formatting issues, missing sections, unprofessional
@@ -66,9 +98,12 @@ Provide ${hasJD ? 'targeted ATS analysis based on the job description' : 'genera
      * 95-100: Outstanding - Perfect ATS optimization, ideal structure and content
 
 2. **Keyword Analysis**:
-   ${hasJD ? `- Extract 5-10 key technical skills, tools, and qualifications from the job description
-   - These are keywords the candidate should include in their resume` : `- DO NOT suggest missing keywords without a job description
-   - Instead, suggest checking for: relevant technical skills, action verbs, quantifiable achievements`}
+   ${hasJD ? `- Compare the resume content against the job description
+   - List keywords that ARE PRESENT in both (keywordMatches)
+   - List keywords from JD that ARE MISSING from resume (missingKeywords)
+   - Be accurate - only list keywords as "missing" if they're truly absent from the resume text` : `- List 5-7 technical skills and keywords found IN the resume
+   - DO NOT list missing keywords without a job description
+   - Focus on what's present in the resume`}
 
 3. **Formatting Score (0-100)** - Use full range based on quality:
    - Standard best practices: use simple formatting, avoid tables/columns
@@ -92,13 +127,13 @@ Provide ${hasJD ? 'targeted ATS analysis based on the job description' : 'genera
      * 75-85: Good - Strong action verbs, some quantifiable results
      * 85-100: Excellent - Compelling content, quantified achievements throughout
 
-5. **Strengths**: 3-5 general strengths of well-formatted resumes
+5. **Strengths**: 3-5 strengths found IN THIS SPECIFIC resume
 
-6. **Weaknesses**: 3-5 common pitfalls to avoid
+6. **Weaknesses**: 3-5 weaknesses or areas for improvement found IN THIS SPECIFIC resume
 
-7. **Specific Suggestions**: 5-8 actionable recommendations for ATS optimization
+7. **Specific Suggestions**: 5-8 actionable recommendations based on THIS SPECIFIC resume content
 
-${hasJD ? 'Focus your analysis on keywords and skills from the job description.' : 'Focus on general best practices. DO NOT list missing keywords without a job description.'}
+${hasJD ? 'IMPORTANT: Base your keyword matching on ACTUAL comparison of the resume text vs job description. Only mark keywords as "missing" if they are truly absent from the resume.' : 'Focus on general best practices based on what you see in the resume. DO NOT list missing keywords without a job description.'}
 
 CRITICAL SCORING RULES:
 - Use the ENTIRE 0-100 scale based on actual quality
