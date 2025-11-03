@@ -12,6 +12,24 @@ interface ATSScoreDisplayProps {
 }
 
 export function ATSScoreDisplay({ score, analysis }: ATSScoreDisplayProps) {
+  // Provide default values to prevent undefined errors
+  const safeAnalysis = {
+    score: score || 0,
+    strengths: analysis?.strengths || [],
+    weaknesses: analysis?.weaknesses || [],
+    keywordMatches: analysis?.keywordMatches || [],
+    missingKeywords: analysis?.missingKeywords || [],
+    suggestions: analysis?.suggestions || [],
+    formatting: {
+      score: analysis?.formatting?.score || 0,
+      issues: analysis?.formatting?.issues || []
+    },
+    content: {
+      score: analysis?.content?.score || 0,
+      issues: analysis?.content?.issues || []
+    }
+  };
+
   const getScoreColor = (score: number) => {
     if (score >= 80) return "text-green-600 dark:text-green-400";
     if (score >= 60) return "text-yellow-600 dark:text-yellow-400";
@@ -61,13 +79,13 @@ export function ATSScoreDisplay({ score, analysis }: ATSScoreDisplayProps) {
           <CardContent>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-3xl font-bold">{analysis.formatting.score}</span>
+                <span className="text-3xl font-bold">{safeAnalysis.formatting.score}</span>
                 <span className="text-muted-foreground">/100</span>
               </div>
-              <Progress value={analysis.formatting.score} className="h-2" />
-              {analysis.formatting.issues.length > 0 && (
+              <Progress value={safeAnalysis.formatting.score} className="h-2" />
+              {safeAnalysis.formatting.issues.length > 0 && (
                 <div className="mt-3 space-y-1">
-                  {analysis.formatting.issues.slice(0, 3).map((issue, idx) => (
+                  {safeAnalysis.formatting.issues.slice(0, 3).map((issue, idx) => (
                     <p key={idx} className="text-xs text-muted-foreground flex items-start gap-1">
                       <AlertCircle className="w-3 h-3 mt-0.5 flex-shrink-0" />
                       <span>{issue}</span>
@@ -86,13 +104,13 @@ export function ATSScoreDisplay({ score, analysis }: ATSScoreDisplayProps) {
           <CardContent>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-3xl font-bold">{analysis.content.score}</span>
+                <span className="text-3xl font-bold">{safeAnalysis.content.score}</span>
                 <span className="text-muted-foreground">/100</span>
               </div>
-              <Progress value={analysis.content.score} className="h-2" />
-              {analysis.content.issues.length > 0 && (
+              <Progress value={safeAnalysis.content.score} className="h-2" />
+              {safeAnalysis.content.issues.length > 0 && (
                 <div className="mt-3 space-y-1">
-                  {analysis.content.issues.slice(0, 3).map((issue, idx) => (
+                  {safeAnalysis.content.issues.slice(0, 3).map((issue, idx) => (
                     <p key={idx} className="text-xs text-muted-foreground flex items-start gap-1">
                       <AlertCircle className="w-3 h-3 mt-0.5 flex-shrink-0" />
                       <span>{issue}</span>
@@ -116,7 +134,7 @@ export function ATSScoreDisplay({ score, analysis }: ATSScoreDisplayProps) {
           </CardHeader>
           <CardContent>
             <ul className="space-y-2">
-              {analysis.strengths.map((strength, idx) => (
+              {safeAnalysis.strengths.map((strength, idx) => (
                 <li key={idx} className="text-sm flex items-start gap-2">
                   <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
                   <span>{strength}</span>
@@ -135,7 +153,7 @@ export function ATSScoreDisplay({ score, analysis }: ATSScoreDisplayProps) {
           </CardHeader>
           <CardContent>
             <ul className="space-y-2">
-              {analysis.weaknesses.map((weakness, idx) => (
+              {safeAnalysis.weaknesses.map((weakness, idx) => (
                 <li key={idx} className="text-sm flex items-start gap-2">
                   <XCircle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
                   <span>{weakness}</span>
@@ -155,8 +173,8 @@ export function ATSScoreDisplay({ score, analysis }: ATSScoreDisplayProps) {
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">
-              {analysis.keywordMatches.length > 0 ? (
-                analysis.keywordMatches.map((keyword, idx) => (
+              {safeAnalysis.keywordMatches.length > 0 ? (
+                safeAnalysis.keywordMatches.map((keyword, idx) => (
                   <Badge key={idx} variant="outline" className="bg-green-50 dark:bg-green-950">
                     {keyword}
                   </Badge>
@@ -175,8 +193,8 @@ export function ATSScoreDisplay({ score, analysis }: ATSScoreDisplayProps) {
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">
-              {analysis.missingKeywords.length > 0 ? (
-                analysis.missingKeywords.map((keyword, idx) => (
+              {safeAnalysis.missingKeywords.length > 0 ? (
+                safeAnalysis.missingKeywords.map((keyword, idx) => (
                   <Badge key={idx} variant="outline" className="bg-red-50 dark:bg-red-950">
                     {keyword}
                   </Badge>
@@ -197,7 +215,7 @@ export function ATSScoreDisplay({ score, analysis }: ATSScoreDisplayProps) {
         </CardHeader>
         <CardContent>
           <ol className="space-y-3">
-            {analysis.suggestions.map((suggestion, idx) => (
+            {safeAnalysis.suggestions.map((suggestion, idx) => (
               <li key={idx} className="text-sm flex items-start gap-3">
                 <span className="font-bold text-primary">{idx + 1}.</span>
                 <span>{suggestion}</span>

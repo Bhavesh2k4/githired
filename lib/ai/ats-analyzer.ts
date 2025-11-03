@@ -1,5 +1,4 @@
 import { generateStructuredResponse } from "./gemini-client";
-import pdf from "pdf-parse";
 
 export interface ATSAnalysis {
   score: number; // 0-100
@@ -20,20 +19,63 @@ export interface ATSAnalysis {
 
 async function extractTextFromPDF(resumeUrl: string): Promise<string> {
   try {
+    // Using pdf2json - designed for server-side Node.js PDF parsing
+    const PDFParser = (await import("pdf2json")).default;
+    
     // Fetch the PDF
     const response = await fetch(resumeUrl);
     if (!response.ok) {
       throw new Error(`Failed to fetch PDF: ${response.statusText}`);
     }
     
-    // Get the PDF as a buffer
     const arrayBuffer = await response.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
     
-    // Parse the PDF
-    const data = await pdf(buffer);
-    
-    return data.text;
+    // Create parser and extract text
+    return new Promise<string>((resolve, reject) => {
+      const pdfParser = new (PDFParser as any)(null, 1);
+      
+      pdfParser.on("pdfParser_dataError", (errData: any) => {
+        reject(new Error(errData.parserError));
+      });
+      
+      pdfParser.on("pdfParser_dataReady", (pdfData: any) => {
+        try {
+          // Extract text manually from parsed data to avoid getRawTextContent() bug
+          let text = "";
+          
+          if (pdfData && pdfData.Pages) {
+            pdfData.Pages.forEach((page: any) => {
+              if (page.Texts) {
+                page.Texts.forEach((textItem: any) => {
+                  if (textItem.R) {
+                    textItem.R.forEach((run: any) => {
+                      if (run.T) {
+                        // Try to decode URI component, fallback to raw text if malformed
+                        try {
+                          text += decodeURIComponent(run.T) + " ";
+                        } catch (e) {
+                          // If decode fails, use the raw text (replace %20 with space manually)
+                          text += run.T.replace(/%20/g, " ") + " ";
+                        }
+                      }
+                    });
+                  }
+                });
+                text += "\n"; // New line after each page
+              }
+            });
+          }
+          
+          resolve(text.trim());
+        } catch (error) {
+          reject(error);
+        }
+      });
+      
+      // Parse the PDF buffer
+      pdfParser.parseBuffer(buffer);
+    });
   } catch (error: any) {
     console.error("PDF extraction error:", error);
     throw new Error("Failed to extract text from PDF: " + error.message);
