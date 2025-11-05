@@ -181,7 +181,9 @@ RESPONSE SCHEMA:
     "yAxis": "column name for y-axis (optional)",
     "groupBy": "column to group by (optional)"
   }
-}`;
+}
+
+IMPORTANT: You must respond with ONLY valid JSON matching the schema above. Do not include any explanations, markdown formatting, or additional text outside the JSON object.`;
 }
 
 export async function convertQueryToSQL(

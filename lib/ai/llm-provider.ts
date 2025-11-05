@@ -119,10 +119,9 @@ function getGeminiProvider(): LLMProvider {
 
         const fullPrompt = `${options?.systemPrompt || ""}\n\n${prompt}\n\nRespond with valid JSON matching this schema:\n${schema}\n\nReturn ONLY the JSON, no additional text.`;
         
-        const generationConfig: any = {};
-        if (options?.temperature !== undefined) {
-          generationConfig.temperature = options.temperature;
-        }
+        const generationConfig: any = {
+          temperature: options?.temperature ?? 0.3,
+        };
         if (options?.maxTokens !== undefined) {
           generationConfig.maxOutputTokens = options.maxTokens;
         }
@@ -135,11 +134,49 @@ function getGeminiProvider(): LLMProvider {
         const response = await result.response;
         const text = response.text();
         
-        // Extract JSON from response (handle cases where model adds markdown)
-        const jsonMatch = text.match(/```json\s*([\s\S]*?)\s*```/) || text.match(/\{[\s\S]*\}/);
-        const jsonText = jsonMatch ? (jsonMatch[1] || jsonMatch[0]) : text;
+        // Log the raw response for debugging (first 500 chars)
+        console.log("[LLM] Raw Gemini response:", text.substring(0, 500));
         
-        return JSON.parse(jsonText);
+        // Extract JSON from response (handle cases where model adds markdown)
+        let jsonText = text.trim();
+        
+        // Try to extract JSON from markdown code blocks first
+        const jsonInMarkdown = text.match(/```json\s*([\s\S]*?)\s*```/);
+        if (jsonInMarkdown) {
+          jsonText = jsonInMarkdown[1].trim();
+        } else {
+          // Try to extract JSON from plain code blocks
+          const jsonInCode = text.match(/```\s*([\s\S]*?)\s*```/);
+          if (jsonInCode) {
+            jsonText = jsonInCode[1].trim();
+          } else {
+            // Try to find JSON object in the text
+            const jsonMatch = text.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+              jsonText = jsonMatch[0];
+            }
+          }
+        }
+        
+        // If the response looks like it contains prompt instructions, it's an error
+        if (jsonText.includes("REQUIREMENTS:") || jsonText.includes("RESPONSE SCHEMA:") || jsonText.includes("You are a PostgreSQL")) {
+          console.error("[LLM] Error: LLM returned prompt instructions instead of JSON response");
+          throw new Error("LLM returned prompt instructions instead of JSON response. This may indicate an API issue or invalid model configuration.");
+        }
+        
+        try {
+          const parsed = JSON.parse(jsonText);
+          
+          // Validate that we got a proper response
+          if (!parsed || typeof parsed !== 'object') {
+            throw new Error("Parsed JSON is not an object");
+          }
+          
+          return parsed;
+        } catch (parseError: any) {
+          console.error("[LLM] JSON parse error. Attempted to parse:", jsonText.substring(0, 1000));
+          throw new Error(`Failed to parse JSON response: ${parseError.message}. Response preview: ${jsonText.substring(0, 200)}...`);
+        }
       } catch (error: any) {
         console.error("Gemini Structured Response Error:", error);
         
@@ -147,6 +184,11 @@ function getGeminiProvider(): LLMProvider {
           throw new Error(
             "Gemini API Error: Model not found. Please check your GEMINI_API_KEY and model name."
           );
+        }
+        
+        // If it's already our custom error, re-throw it
+        if (error.message?.includes("LLM returned prompt instructions")) {
+          throw error;
         }
         
         throw new Error("Failed to generate AI response: " + (error.message || "Unknown error"));
