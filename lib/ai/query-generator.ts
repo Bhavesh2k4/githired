@@ -171,19 +171,16 @@ REQUIREMENTS:
 11. NEVER use jsonb_array_elements() on TEXT[] columns - use unnest() instead
 12. Use comma syntax for simple joins/unnest: "FROM table1, unnest(array) AS item" instead of CROSS JOIN
 
-RESPONSE SCHEMA:
-{
-  "sql": "SELECT ...",
-  "explanation": "Plain English explanation of what the query does",
-  "chartType": "bar | line | pie | radar | table | metric | funnel",
-  "visualization": {
-    "xAxis": "column name for x-axis (optional)",
-    "yAxis": "column name for y-axis (optional)",
-    "groupBy": "column to group by (optional)"
-  }
-}
+OUTPUT FORMAT: Return ONLY a valid JSON object with these exact fields:
+- sql: (string) The PostgreSQL SELECT query
+- explanation: (string) Plain English explanation
+- chartType: (string) One of: bar, line, pie, radar, table, metric, funnel
+- visualization: (object) Optional fields: xAxis, yAxis, groupBy
 
-IMPORTANT: You must respond with ONLY valid JSON matching the schema above. Do not include any explanations, markdown formatting, or additional text outside the JSON object.`;
+Example response:
+{"sql":"SELECT COUNT(*) FROM students","explanation":"Counts total students","chartType":"metric","visualization":{}}
+
+CRITICAL: Respond with ONLY the JSON object, no markdown, no explanations, no code blocks.`;
 }
 
 export async function convertQueryToSQL(

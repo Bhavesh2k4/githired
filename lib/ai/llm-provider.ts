@@ -113,11 +113,22 @@ function getGeminiProvider(): LLMProvider {
       options?: LLMOptions
     ): Promise<T> {
       try {
+        // Use systemInstruction for better JSON compliance
         const model = options?.model 
-          ? genAI.getGenerativeModel({ model: options.model })
-          : geminiModel;
+          ? genAI.getGenerativeModel({ 
+              model: options.model,
+              systemInstruction: "You are a helpful assistant that responds ONLY with valid JSON. Never include explanations, markdown formatting, or any text outside the JSON object."
+            })
+          : genAI.getGenerativeModel({ 
+              model: modelName,
+              systemInstruction: "You are a helpful assistant that responds ONLY with valid JSON. Never include explanations, markdown formatting, or any text outside the JSON object."
+            });
 
-        const fullPrompt = `${options?.systemPrompt || ""}\n\n${prompt}\n\nRespond with valid JSON matching this schema:\n${schema}\n\nReturn ONLY the JSON, no additional text.`;
+        // The prompt already contains instructions, and systemInstruction handles JSON-only requirement
+        // Add the schema reference to ensure proper format
+        const fullPrompt = options?.systemPrompt 
+          ? `${options.systemPrompt}\n\n${prompt}\n\nSchema to match:\n${schema}`
+          : `${prompt}\n\nSchema to match:\n${schema}`;
         
         const generationConfig: any = {
           temperature: options?.temperature ?? 0.3,
