@@ -1,4 +1,4 @@
-import { generateStructuredResponse } from "./gemini-client";
+import { generateStructuredResponse } from "./llm-provider";
 import { db } from "@/db/drizzle";
 import { students, jobs, applications } from "@/db/schema";
 import { eq } from "drizzle-orm";

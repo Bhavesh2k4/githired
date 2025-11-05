@@ -87,6 +87,15 @@ export async function applyToJob(
     throw new Error("This job is no longer accepting applications");
   }
 
+  // Check if deadline has passed
+  if (job.deadline) {
+    const now = new Date();
+    const deadline = new Date(job.deadline);
+    if (now > deadline) {
+      throw new Error("Application deadline has passed");
+    }
+  }
+
   // Check eligibility
   const eligibilityCheck = await checkEligibility(job, student);
   if (!eligibilityCheck.eligible) {

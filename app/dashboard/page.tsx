@@ -94,63 +94,218 @@ export default async function DashboardPage() {
       <Card>
         <CardHeader>
           <CardTitle>Profile Completion</CardTitle>
-          <CardDescription>Complete your profile to increase visibility</CardDescription>
+          <CardDescription>Complete your profile to increase visibility and job matches</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-6">
+          {/* Overall Progress */}
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
-              <span>Profile Progress</span>
-              <span className="font-medium">
+              <span className="font-medium">Overall Progress</span>
+              <span className="font-bold text-lg">
                 {Math.round(calculateProfileCompletion(profile))}%
               </span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
+            <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-3">
               <div
-                className="bg-primary h-2 rounded-full transition-all"
+                className={`h-3 rounded-full transition-all ${
+                  calculateProfileCompletion(profile) >= 80 
+                    ? 'bg-green-500' 
+                    : calculateProfileCompletion(profile) >= 50 
+                    ? 'bg-yellow-500' 
+                    : 'bg-red-500'
+                }`}
                 style={{ width: `${calculateProfileCompletion(profile)}%` }}
               />
             </div>
+            <p className="text-xs text-muted-foreground">
+              {calculateProfileCompletion(profile) >= 80 
+                ? '✨ Excellent! Your profile is highly attractive to recruiters'
+                : calculateProfileCompletion(profile) >= 50 
+                ? '👍 Good progress! Complete more sections to stand out'
+                : '🚀 Get started! A complete profile gets 3x more views'}
+            </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-4">
-            <div className="flex items-center gap-2">
-              {profile.srn ? (
-                <CheckCircle className="w-4 h-4 text-green-500" />
-              ) : (
-                <AlertCircle className="w-4 h-4 text-yellow-500" />
-              )}
-              <span className="text-sm">SRN Added</span>
+          {/* Category Breakdown */}
+          <div className="space-y-4">
+            <h4 className="text-sm font-semibold">Completion by Category</h4>
+            
+            {/* Basic Info */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Basic Info (20 pts)</span>
+                <span className="font-medium">{calculateCategoryScore(profile, 'basic')}/20</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="flex items-center gap-2 text-xs">
+                  {profile.phone ? (
+                    <CheckCircle className="w-3 h-3 text-green-500 flex-shrink-0" />
+                  ) : (
+                    <AlertCircle className="w-3 h-3 text-yellow-500 flex-shrink-0" />
+                  )}
+                  <span>Phone (5)</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  {profile.cgpa ? (
+                    <CheckCircle className="w-3 h-3 text-green-500 flex-shrink-0" />
+                  ) : (
+                    <AlertCircle className="w-3 h-3 text-yellow-500 flex-shrink-0" />
+                  )}
+                  <span>CGPA (5)</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  {profile.degree ? (
+                    <CheckCircle className="w-3 h-3 text-green-500 flex-shrink-0" />
+                  ) : (
+                    <AlertCircle className="w-3 h-3 text-yellow-500 flex-shrink-0" />
+                  )}
+                  <span>Degree (5)</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  {profile.course ? (
+                    <CheckCircle className="w-3 h-3 text-green-500 flex-shrink-0" />
+                  ) : (
+                    <AlertCircle className="w-3 h-3 text-yellow-500 flex-shrink-0" />
+                  )}
+                  <span>Course (5)</span>
+                </div>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              {(profile.resumes && (profile.resumes as any[]).length > 0) || profile.resumeUrl ? (
-                <CheckCircle className="w-4 h-4 text-green-500" />
-              ) : (
-                <AlertCircle className="w-4 h-4 text-yellow-500" />
-              )}
-              <span className="text-sm">Resume Uploaded</span>
+
+            {/* Skills */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Skills (15 pts)</span>
+                <span className="font-medium">{calculateCategoryScore(profile, 'skills')}/15</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs">
+                {profile.skills && (profile.skills as any[]).length >= 10 ? (
+                  <CheckCircle className="w-3 h-3 text-green-500 flex-shrink-0" />
+                ) : profile.skills && (profile.skills as any[]).length >= 5 ? (
+                  <AlertCircle className="w-3 h-3 text-yellow-500 flex-shrink-0" />
+                ) : (
+                  <AlertCircle className="w-3 h-3 text-red-500 flex-shrink-0" />
+                )}
+                <span>
+                  {profile.skills ? (profile.skills as any[]).length : 0} skills 
+                  (target: 5+, excellent: 10+)
+                </span>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              {profile.skills && profile.skills.length > 0 ? (
-                <CheckCircle className="w-4 h-4 text-green-500" />
-              ) : (
-                <AlertCircle className="w-4 h-4 text-yellow-500" />
-              )}
-              <span className="text-sm">Skills Added</span>
+
+            {/* Projects */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Projects (15 pts)</span>
+                <span className="font-medium">{calculateCategoryScore(profile, 'projects')}/15</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs">
+                {profile.projects && (profile.projects as any[]).length >= 3 ? (
+                  <CheckCircle className="w-3 h-3 text-green-500 flex-shrink-0" />
+                ) : profile.projects && (profile.projects as any[]).length >= 2 ? (
+                  <AlertCircle className="w-3 h-3 text-yellow-500 flex-shrink-0" />
+                ) : (
+                  <AlertCircle className="w-3 h-3 text-red-500 flex-shrink-0" />
+                )}
+                <span>
+                  {profile.projects ? (profile.projects as any[]).length : 0} projects 
+                  (target: 2+, excellent: 3+)
+                </span>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              {profile.githubUrl || profile.linkedinUrl ? (
-                <CheckCircle className="w-4 h-4 text-green-500" />
-              ) : (
-                <AlertCircle className="w-4 h-4 text-yellow-500" />
-              )}
-              <span className="text-sm">Social Links</span>
+
+            {/* Experience & Certifications */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground text-xs">Experience (15 pts)</span>
+                  <span className="font-medium text-xs">{calculateCategoryScore(profile, 'experience')}/15</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  {profile.experience && (profile.experience as any[]).length >= 2 ? (
+                    <CheckCircle className="w-3 h-3 text-green-500 flex-shrink-0" />
+                  ) : profile.experience && (profile.experience as any[]).length > 0 ? (
+                    <AlertCircle className="w-3 h-3 text-yellow-500 flex-shrink-0" />
+                  ) : (
+                    <AlertCircle className="w-3 h-3 text-red-500 flex-shrink-0" />
+                  )}
+                  <span>{profile.experience ? (profile.experience as any[]).length : 0} entries</span>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground text-xs">Certs (10 pts)</span>
+                  <span className="font-medium text-xs">{calculateCategoryScore(profile, 'certifications')}/10</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  {profile.certifications && (profile.certifications as any[]).length >= 2 ? (
+                    <CheckCircle className="w-3 h-3 text-green-500 flex-shrink-0" />
+                  ) : profile.certifications && (profile.certifications as any[]).length > 0 ? (
+                    <AlertCircle className="w-3 h-3 text-yellow-500 flex-shrink-0" />
+                  ) : (
+                    <AlertCircle className="w-3 h-3 text-red-500 flex-shrink-0" />
+                  )}
+                  <span>{profile.certifications ? (profile.certifications as any[]).length : 0} certs</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Resume & Profile Links */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Resume & Links (25 pts)</span>
+                <span className="font-medium">{calculateCategoryScore(profile, 'extras')}/25</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="flex items-center gap-2 text-xs">
+                  {(profile.resumes && (profile.resumes as any[]).length > 0) || profile.resumeUrl ? (
+                    <CheckCircle className="w-3 h-3 text-green-500 flex-shrink-0" />
+                  ) : (
+                    <AlertCircle className="w-3 h-3 text-red-500 flex-shrink-0" />
+                  )}
+                  <span>Resume (10)</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  {profile.githubUrl ? (
+                    <CheckCircle className="w-3 h-3 text-green-500 flex-shrink-0" />
+                  ) : (
+                    <AlertCircle className="w-3 h-3 text-yellow-500 flex-shrink-0" />
+                  )}
+                  <span>GitHub (3)</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  {profile.linkedinUrl ? (
+                    <CheckCircle className="w-3 h-3 text-green-500 flex-shrink-0" />
+                  ) : (
+                    <AlertCircle className="w-3 h-3 text-yellow-500 flex-shrink-0" />
+                  )}
+                  <span>LinkedIn (4)</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  {profile.portfolioUrl ? (
+                    <CheckCircle className="w-3 h-3 text-green-500 flex-shrink-0" />
+                  ) : (
+                    <AlertCircle className="w-3 h-3 text-yellow-500 flex-shrink-0" />
+                  )}
+                  <span>Portfolio (3)</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs col-span-2">
+                  {profile.bio || profile.aboutMe ? (
+                    <CheckCircle className="w-3 h-3 text-green-500 flex-shrink-0" />
+                  ) : (
+                    <AlertCircle className="w-3 h-3 text-yellow-500 flex-shrink-0" />
+                  )}
+                  <span>Bio/About Me (5)</span>
+                </div>
+              </div>
             </div>
           </div>
 
           <Button asChild className="w-full mt-4">
             <Link href="/dashboard/profile/edit">
               <Edit className="w-4 h-4 mr-2" />
-              Edit Profile
+              Complete Your Profile
             </Link>
           </Button>
         </CardContent>
@@ -207,19 +362,103 @@ export default async function DashboardPage() {
 }
 
 function calculateProfileCompletion(profile: any): number {
-  let completed = 0;
-  let total = 10;
+  let score = 0;
+  const maxScore = 100;
 
-  if (profile.srn) completed++;
-  if (profile.phone) completed++;
-  if (profile.headline) completed++;
-  if (profile.bio) completed++;
-  if ((profile.resumes && (profile.resumes as any[]).length > 0) || profile.resumeUrl) completed++;
-  if (profile.skills && profile.skills.length > 0) completed++;
-  if (profile.githubUrl) completed++;
-  if (profile.linkedinUrl) completed++;
-  if (profile.location) completed++;
-  if (profile.aboutMe) completed++;
+  // Basic info (20 points)
+  if (profile.phone) score += 5;
+  if (profile.cgpa) score += 5;
+  if (profile.degree) score += 5;
+  if (profile.course) score += 5;
 
-  return (completed / total) * 100;
+  // Skills (15 points)
+  const skills = (profile.skills as any[]) || [];
+  if (skills.length > 0) score += 5;
+  if (skills.length >= 5) score += 5;
+  if (skills.length >= 10) score += 5;
+
+  // Projects (15 points)
+  const projects = (profile.projects as any[]) || [];
+  if (projects.length > 0) score += 5;
+  if (projects.length >= 2) score += 5;
+  if (projects.length >= 3) score += 5;
+
+  // Experience (15 points)
+  const experience = (profile.experience as any[]) || [];
+  if (experience.length > 0) score += 5;
+  if (experience.length >= 2) score += 10;
+
+  // Certifications (10 points)
+  const certifications = (profile.certifications as any[]) || [];
+  if (certifications.length > 0) score += 5;
+  if (certifications.length >= 2) score += 5;
+
+  // Resume (10 points)
+  const resumes = (profile.resumes as any[]) || [];
+  if (resumes.length > 0 || profile.resumeUrl) score += 10;
+
+  // Profile links (10 points)
+  if (profile.githubUrl) score += 3;
+  if (profile.linkedinUrl) score += 4;
+  if (profile.portfolioUrl) score += 3;
+
+  // Bio/About (5 points)
+  if (profile.bio || profile.aboutMe) score += 5;
+
+  return Math.min(score, maxScore);
+}
+
+function calculateCategoryScore(profile: any, category: string): number {
+  switch (category) {
+    case 'basic':
+      let basicScore = 0;
+      if (profile.phone) basicScore += 5;
+      if (profile.cgpa) basicScore += 5;
+      if (profile.degree) basicScore += 5;
+      if (profile.course) basicScore += 5;
+      return basicScore;
+    
+    case 'skills':
+      const skills = (profile.skills as any[]) || [];
+      let skillScore = 0;
+      if (skills.length > 0) skillScore += 5;
+      if (skills.length >= 5) skillScore += 5;
+      if (skills.length >= 10) skillScore += 5;
+      return skillScore;
+    
+    case 'projects':
+      const projects = (profile.projects as any[]) || [];
+      let projectScore = 0;
+      if (projects.length > 0) projectScore += 5;
+      if (projects.length >= 2) projectScore += 5;
+      if (projects.length >= 3) projectScore += 5;
+      return projectScore;
+    
+    case 'experience':
+      const experience = (profile.experience as any[]) || [];
+      let expScore = 0;
+      if (experience.length > 0) expScore += 5;
+      if (experience.length >= 2) expScore += 10;
+      return expScore;
+    
+    case 'certifications':
+      const certifications = (profile.certifications as any[]) || [];
+      let certScore = 0;
+      if (certifications.length > 0) certScore += 5;
+      if (certifications.length >= 2) certScore += 5;
+      return certScore;
+    
+    case 'extras':
+      let extraScore = 0;
+      const resumes = (profile.resumes as any[]) || [];
+      if (resumes.length > 0 || profile.resumeUrl) extraScore += 10;
+      if (profile.githubUrl) extraScore += 3;
+      if (profile.linkedinUrl) extraScore += 4;
+      if (profile.portfolioUrl) extraScore += 3;
+      if (profile.bio || profile.aboutMe) extraScore += 5;
+      return extraScore;
+    
+    default:
+      return 0;
+  }
 }

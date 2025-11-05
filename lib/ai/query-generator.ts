@@ -1,4 +1,4 @@
-import { generateStructuredResponse } from "./gemini-client";
+import { generateStructuredResponse } from "./llm-provider";
 import { ROLE_PERMISSIONS } from "./sql-validator";
 
 interface QueryResponse {

@@ -182,16 +182,16 @@ export default function PeerComparisonPage() {
             <CardDescription>CGPA Percentile</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center justify-between">
-              <div>
-                <div className={`text-3xl font-bold ${getPercentileColor(comparison.cgpa.percentile)}`}>
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex-1 min-w-0">
+                <div className={`text-3xl font-bold truncate ${getPercentileColor(comparison.cgpa.percentile)}`}>
                   {comparison.cgpa.percentile}th
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-xs text-muted-foreground mt-1 truncate">
                   Rank {comparison.cgpa.rank} of {comparison.cgpa.total}
                 </p>
               </div>
-              <Award className="w-8 h-8 text-muted-foreground" />
+              <Award className="w-8 h-8 text-muted-foreground flex-shrink-0" />
             </div>
           </CardContent>
         </Card>
@@ -201,14 +201,16 @@ export default function PeerComparisonPage() {
             <CardDescription>Application Activity</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-3xl font-bold">{comparison.applications.yourCount}</div>
-                <p className="text-xs text-muted-foreground mt-1">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex-1 min-w-0">
+                <div className="text-3xl font-bold truncate">{comparison.applications.yourCount}</div>
+                <p className="text-xs text-muted-foreground mt-1 truncate">
                   Avg: {comparison.applications.average}
                 </p>
               </div>
-              {getTrendIcon(comparison.applications.yourCount, comparison.applications.average)}
+              <div className="flex-shrink-0">
+                {getTrendIcon(comparison.applications.yourCount, comparison.applications.average)}
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -218,14 +220,16 @@ export default function PeerComparisonPage() {
             <CardDescription>Success Rate</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-3xl font-bold">{comparison.successRate.yourRate}%</div>
-                <p className="text-xs text-muted-foreground mt-1">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex-1 min-w-0">
+                <div className="text-3xl font-bold truncate">{comparison.successRate.yourRate}%</div>
+                <p className="text-xs text-muted-foreground mt-1 truncate">
                   Avg: {comparison.successRate.average}%
                 </p>
               </div>
-              {getTrendIcon(comparison.successRate.yourRate, comparison.successRate.average)}
+              <div className="flex-shrink-0">
+                {getTrendIcon(comparison.successRate.yourRate, comparison.successRate.average)}
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -235,14 +239,14 @@ export default function PeerComparisonPage() {
             <CardDescription>Profile Completeness</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-3xl font-bold">{comparison.profileCompleteness.yourScore}%</div>
-                <p className="text-xs text-muted-foreground mt-1">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex-1 min-w-0">
+                <div className="text-3xl font-bold truncate">{comparison.profileCompleteness.yourScore}%</div>
+                <p className="text-xs text-muted-foreground mt-1 truncate">
                   Avg: {comparison.profileCompleteness.average}%
                 </p>
               </div>
-              <Target className="w-8 h-8 text-muted-foreground" />
+              <Target className="w-8 h-8 text-muted-foreground flex-shrink-0" />
             </div>
           </CardContent>
         </Card>

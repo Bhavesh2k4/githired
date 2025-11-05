@@ -1,4 +1,4 @@
-import { generateStructuredResponse } from "./gemini-client";
+import { generateStructuredResponse } from "./llm-provider";
 
 export interface ATSAnalysis {
   score: number; // 0-100

@@ -226,3 +226,137 @@ export async function verifyCompany(companyId: string) {
 
   return { success: true };
 }
+
+// ===== BULK OPERATIONS =====
+
+export async function bulkApproveStudents(studentIds: string[]) {
+  await checkAdmin();
+
+  if (!studentIds || studentIds.length === 0) {
+    throw new Error("No student IDs provided");
+  }
+
+  const results = await Promise.allSettled(
+    studentIds.map(id => approveStudent(id))
+  );
+
+  const successful = results.filter(r => r.status === "fulfilled").length;
+  const failed = results.filter(r => r.status === "rejected").length;
+
+  return { 
+    success: true, 
+    processed: studentIds.length,
+    successful,
+    failed
+  };
+}
+
+export async function bulkRejectStudents(studentIds: string[], note?: string) {
+  await checkAdmin();
+
+  if (!studentIds || studentIds.length === 0) {
+    throw new Error("No student IDs provided");
+  }
+
+  const results = await Promise.allSettled(
+    studentIds.map(id => rejectStudent(id, note))
+  );
+
+  const successful = results.filter(r => r.status === "fulfilled").length;
+  const failed = results.filter(r => r.status === "rejected").length;
+
+  return { 
+    success: true, 
+    processed: studentIds.length,
+    successful,
+    failed
+  };
+}
+
+export async function bulkBanStudents(studentIds: string[], note?: string) {
+  await checkAdmin();
+
+  if (!studentIds || studentIds.length === 0) {
+    throw new Error("No student IDs provided");
+  }
+
+  const results = await Promise.allSettled(
+    studentIds.map(id => banStudent(id, note))
+  );
+
+  const successful = results.filter(r => r.status === "fulfilled").length;
+  const failed = results.filter(r => r.status === "rejected").length;
+
+  return { 
+    success: true, 
+    processed: studentIds.length,
+    successful,
+    failed
+  };
+}
+
+export async function bulkApproveCompanies(companyIds: string[]) {
+  await checkAdmin();
+
+  if (!companyIds || companyIds.length === 0) {
+    throw new Error("No company IDs provided");
+  }
+
+  const results = await Promise.allSettled(
+    companyIds.map(id => approveCompany(id))
+  );
+
+  const successful = results.filter(r => r.status === "fulfilled").length;
+  const failed = results.filter(r => r.status === "rejected").length;
+
+  return { 
+    success: true, 
+    processed: companyIds.length,
+    successful,
+    failed
+  };
+}
+
+export async function bulkRejectCompanies(companyIds: string[], note?: string) {
+  await checkAdmin();
+
+  if (!companyIds || companyIds.length === 0) {
+    throw new Error("No company IDs provided");
+  }
+
+  const results = await Promise.allSettled(
+    companyIds.map(id => rejectCompany(id, note))
+  );
+
+  const successful = results.filter(r => r.status === "fulfilled").length;
+  const failed = results.filter(r => r.status === "rejected").length;
+
+  return { 
+    success: true, 
+    processed: companyIds.length,
+    successful,
+    failed
+  };
+}
+
+export async function bulkBanCompanies(companyIds: string[], note?: string) {
+  await checkAdmin();
+
+  if (!companyIds || companyIds.length === 0) {
+    throw new Error("No company IDs provided");
+  }
+
+  const results = await Promise.allSettled(
+    companyIds.map(id => banCompany(id, note))
+  );
+
+  const successful = results.filter(r => r.status === "fulfilled").length;
+  const failed = results.filter(r => r.status === "rejected").length;
+
+  return { 
+    success: true, 
+    processed: companyIds.length,
+    successful,
+    failed
+  };
+}

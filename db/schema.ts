@@ -152,6 +152,7 @@ export const jobs = pgTable("jobs", {
     salary: text('salary'), // Salary range or package
     skills: text('skills').array().$defaultFn(() => []), // Required skills
     benefits: text('benefits').array().$defaultFn(() => []), // Job benefits
+    deadline: timestamp('deadline'), // Application deadline
     status: text('status').$defaultFn(() => 'active').notNull(), // active | stopped
     analytics: jsonb('analytics').$defaultFn(() => ({ views: 0, applications: 0 })),
     createdAt: timestamp('created_at').$defaultFn(() => /* @__PURE__ */ new Date()).notNull(),
@@ -175,7 +176,7 @@ export const applications = pgTable("applications", {
     id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
     jobId: text('job_id').notNull().references(() => jobs.id, { onDelete: 'cascade' }),
     studentId: text('student_id').notNull().references(() => students.id, { onDelete: 'cascade' }),
-    status: text('status').$defaultFn(() => 'pending').notNull(), // pending | oa | interview | selected | rejected
+    status: text('status').$defaultFn(() => 'pending').notNull(), // pending | oa | interview_round_1 | interview_round_2 | interview_round_3 | selected | rejected
     appliedAt: timestamp('applied_at').$defaultFn(() => /* @__PURE__ */ new Date()).notNull(),
     // Snapshot of student data at time of application
     studentCgpa: text('student_cgpa'),
@@ -192,7 +193,28 @@ export const applications = pgTable("applications", {
     jobStudentUniqueIdx: index('idx_applications_job_student').on(table.jobId, table.studentId)
 }));
 
-export const applicationRelations = relations(applications, ({ one }) => ({
+// Interview Schedules
+export const interviews = pgTable("interviews", {
+    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    applicationId: text('application_id').notNull().references(() => applications.id, { onDelete: 'cascade' }),
+    round: text('round').notNull(), // oa | round_1 | round_2 | round_3 | hr
+    scheduledAt: timestamp('scheduled_at').notNull(),
+    duration: text('duration'), // e.g., "60 minutes", "1 hour"
+    location: text('location'), // e.g., "Virtual - Google Meet", "Bangalore Office"
+    meetingLink: text('meeting_link'),
+    interviewers: text('interviewers').array().$defaultFn(() => []), // Names of interviewers
+    notes: text('notes'), // Company notes about the interview
+    status: text('status').$defaultFn(() => 'scheduled').notNull(), // scheduled | completed | cancelled | rescheduled
+    feedback: text('feedback'), // Post-interview feedback
+    result: text('result'), // passed | failed | pending
+    createdAt: timestamp('created_at').$defaultFn(() => /* @__PURE__ */ new Date()).notNull(),
+    updatedAt: timestamp('updated_at').$defaultFn(() => /* @__PURE__ */ new Date()).notNull()
+}, (table) => ({
+    applicationIdIdx: index('idx_interviews_application_id').on(table.applicationId),
+    scheduledAtIdx: index('idx_interviews_scheduled_at').on(table.scheduledAt)
+}));
+
+export const applicationRelations = relations(applications, ({ one, many }) => ({
     job: one(jobs, {
         fields: [applications.jobId],
         references: [jobs.id]
@@ -200,11 +222,22 @@ export const applicationRelations = relations(applications, ({ one }) => ({
     student: one(students, {
         fields: [applications.studentId],
         references: [students.id]
+    }),
+    interviews: many(interviews)
+}));
+
+export const interviewRelations = relations(interviews, ({ one }) => ({
+    application: one(applications, {
+        fields: [interviews.applicationId],
+        references: [applications.id]
     })
 }));
 
 export type Application = typeof applications.$inferSelect;
 export type InsertApplication = typeof applications.$inferInsert;
+
+export type Interview = typeof interviews.$inferSelect;
+export type InsertInterview = typeof interviews.$inferInsert;
 
 // AI Query History Table
 export const aiQueries = pgTable("ai_queries", {

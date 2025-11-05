@@ -195,17 +195,33 @@ export default async function CompanyDashboardPage() {
             </Link>
           </Button>
 
-          <Button variant="outline" disabled className="h-auto p-4 justify-start opacity-50 cursor-not-allowed">
-            <div className="flex flex-col items-start gap-1">
-              <div className="flex items-center gap-2">
-                <Briefcase className="w-4 h-4" />
-                <span className="font-semibold">Post a Job</span>
+          {profile.verified && profile.status === "approved" ? (
+            <Button variant="outline" asChild className="h-auto p-4 justify-start">
+              <Link href="/dashboard/company/jobs/new">
+                <div className="flex flex-col items-start gap-1">
+                  <div className="flex items-center gap-2">
+                    <Briefcase className="w-4 h-4" />
+                    <span className="font-semibold">Post a Job</span>
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    Create a new job posting
+                  </span>
+                </div>
+              </Link>
+            </Button>
+          ) : (
+            <Button variant="outline" disabled className="h-auto p-4 justify-start opacity-50 cursor-not-allowed">
+              <div className="flex flex-col items-start gap-1">
+                <div className="flex items-center gap-2">
+                  <Briefcase className="w-4 h-4" />
+                  <span className="font-semibold">Post a Job</span>
+                </div>
+                <span className="text-xs text-muted-foreground">
+                  Requires verification
+                </span>
               </div>
-              <span className="text-xs text-muted-foreground">
-                Coming soon
-              </span>
-            </div>
-          </Button>
+            </Button>
+          )}
         </CardContent>
       </Card>
     </div>

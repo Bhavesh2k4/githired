@@ -9,6 +9,7 @@ import { Loader2, ArrowLeft, Edit, Eye, Users, Mail, Phone, FileText, Award, Gra
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getApplicationStatusBadge, APPLICATION_STATUSES } from "@/lib/helpers";
+import { ScheduleInterviewModal } from "@/components/schedule-interview-modal";
 
 export default function JobDetailPage() {
   const router = useRouter();
@@ -404,6 +405,11 @@ export default function JobDetailPage() {
                           </option>
                         ))}
                       </select>
+                      <ScheduleInterviewModal
+                        applicationId={app.application.id}
+                        studentName={app.student.email}
+                        onScheduled={loadApplications}
+                      />
                     </div>
                   </div>
                 </div>

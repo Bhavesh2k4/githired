@@ -71,6 +71,7 @@ export async function AppSidebar({
           { title: "Profile", url: "/dashboard/profile/edit" },
           { title: "Jobs", url: "/dashboard/jobs" },
           { title: "Applications", url: "/dashboard/applications" },
+          { title: "Interview Calendar", url: "/dashboard/calendar" },
           { title: "Kanban Board", url: "/dashboard/kanban" },
           { title: "Profile Insights", url: "/dashboard/profile-insights" },
           { title: "Peer Comparison", url: "/dashboard/peer-comparison" },

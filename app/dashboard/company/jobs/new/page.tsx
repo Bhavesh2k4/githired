@@ -5,540 +5,382 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { ArrowLeft, Briefcase, Loader2 } from "lucide-react";
+import Link from "next/link";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { Loader2, Upload, ArrowLeft } from "lucide-react";
-import Link from "next/link";
-import { useEditor, EditorContent } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import { Bold, Italic, List, ListOrdered, Heading2 } from "lucide-react";
+
+const COURSES = ["CSE", "ECE", "EEE", "AIML", "Mechanical", "Civil", "Other"];
+const DEGREES = ["BTech", "MTech", "MCA", "MBA", "BCA", "MSc"];
+const COMMON_SKILLS = [
+  "JavaScript", "Python", "Java", "C++", "React", "Node.js", "TypeScript",
+  "SQL", "MongoDB", "AWS", "Docker", "Git", "Machine Learning", "Data Science",
+  "UI/UX", "Project Management", "Communication", "Problem Solving"
+];
 
 export default function NewJobPage() {
   const router = useRouter();
-  const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
     type: "full-time",
     location: "",
     cgpaCutoff: "",
+    salary: "",
+    deadline: "",
     eligibleCourses: [] as string[],
     eligibleDegrees: [] as string[],
-    jdUrl: "",
-    salary: "",
     skills: [] as string[],
     benefits: [] as string[],
   });
+
   const [skillInput, setSkillInput] = useState("");
   const [benefitInput, setBenefitInput] = useState("");
 
-  const editor = useEditor({
-    extensions: [StarterKit],
-    immediatelyRender: false,
-    content: {
-      type: "doc",
-      content: [
-        {
-          type: "paragraph",
-          content: [{ type: "text", text: "Describe the role in detail..." }],
-        },
-      ],
-    },
-    editorProps: {
-      attributes: {
-        class: "prose prose-sm max-w-none focus:outline-none min-h-[200px] p-4",
-      },
-    },
-  });
-
-  const handleCourseToggle = (course: string) => {
-    if (formData.eligibleCourses.includes(course)) {
-      setFormData({
-        ...formData,
-        eligibleCourses: formData.eligibleCourses.filter((c) => c !== course),
-      });
-    } else {
-      setFormData({
-        ...formData,
-        eligibleCourses: [...formData.eligibleCourses, course],
-      });
-    }
-  };
-
-  const handleDegreeToggle = (degree: string) => {
-    if (formData.eligibleDegrees.includes(degree)) {
-      setFormData({
-        ...formData,
-        eligibleDegrees: formData.eligibleDegrees.filter((d) => d !== degree),
-      });
-    } else {
-      setFormData({
-        ...formData,
-        eligibleDegrees: [...formData.eligibleDegrees, degree],
-      });
-    }
-  };
-
-  const addSkill = () => {
-    if (skillInput.trim()) {
-      setFormData({
-        ...formData,
-        skills: [...formData.skills, skillInput.trim()],
-      });
-      setSkillInput("");
-    }
-  };
-
-  const removeSkill = (index: number) => {
-    setFormData({
-      ...formData,
-      skills: formData.skills.filter((_, i) => i !== index),
-    });
-  };
-
-  const addBenefit = () => {
-    if (benefitInput.trim()) {
-      setFormData({
-        ...formData,
-        benefits: [...formData.benefits, benefitInput.trim()],
-      });
-      setBenefitInput("");
-    }
-  };
-
-  const removeBenefit = (index: number) => {
-    setFormData({
-      ...formData,
-      benefits: formData.benefits.filter((_, i) => i !== index),
-    });
-  };
-
-  const handleJdUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.includes("pdf")) {
-      toast.error("Only PDF files are allowed");
-      return;
-    }
-
-    setUploading(true);
-    try {
-      // Get presigned URL (reusing student resume endpoint pattern)
-      const res = await fetch("/api/student/resume/presigned-url", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          fileName: file.name,
-          fileType: file.type,
-        }),
-      });
-
-      if (!res.ok) {
-        throw new Error("Failed to get upload URL");
-      }
-
-      const { uploadUrl } = await res.json();
-
-      // Upload file
-      const uploadRes = await fetch(uploadUrl, {
-        method: "PUT",
-        body: file,
-        headers: {
-          "Content-Type": file.type,
-        },
-      });
-
-      if (!uploadRes.ok) {
-        throw new Error("Upload failed");
-      }
-
-      const publicUrl = uploadUrl.split("?")[0];
-      setFormData({ ...formData, jdUrl: publicUrl });
-      toast.success("JD uploaded successfully");
-    } catch (error) {
-      toast.error("Failed to upload JD");
-      console.error(error);
-    } finally {
-      setUploading(false);
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!formData.title || !formData.description || !formData.location) {
-      toast.error("Please fill in all required fields");
+    
+    // Validation
+    if (!formData.title.trim()) {
+      toast.error("Job title is required");
+      return;
+    }
+    if (!formData.description.trim()) {
+      toast.error("Job description is required");
+      return;
+    }
+    if (!formData.location.trim()) {
+      toast.error("Location is required");
       return;
     }
 
-    setSaving(true);
-    try {
-      const aboutRole = editor?.getJSON();
+    setLoading(true);
 
+    try {
       const res = await fetch("/api/company/jobs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formData,
-          aboutRole,
+          // Convert deadline to ISO string if provided
+          deadline: formData.deadline ? new Date(formData.deadline).toISOString() : null,
         }),
       });
 
-      if (res.ok) {
-        toast.success("Job posted successfully! Notifying eligible students...");
-        router.push("/dashboard/company/jobs");
-      } else {
+      if (!res.ok) {
         const error = await res.json();
-        toast.error(error.error || "Failed to post job");
+        throw new Error(error.error || "Failed to create job");
       }
-    } catch (error) {
-      toast.error("Error posting job");
-      console.error(error);
+
+      toast.success("Job posted successfully!");
+      router.push("/dashboard/company/jobs");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to post job");
     } finally {
-      setSaving(false);
+      setLoading(false);
     }
+  };
+
+  const toggleCourse = (course: string) => {
+    setFormData(prev => ({
+      ...prev,
+      eligibleCourses: prev.eligibleCourses.includes(course)
+        ? prev.eligibleCourses.filter(c => c !== course)
+        : [...prev.eligibleCourses, course]
+    }));
+  };
+
+  const toggleDegree = (degree: string) => {
+    setFormData(prev => ({
+      ...prev,
+      eligibleDegrees: prev.eligibleDegrees.includes(degree)
+        ? prev.eligibleDegrees.filter(d => d !== degree)
+        : [...prev.eligibleDegrees, degree]
+    }));
+  };
+
+  const toggleSkill = (skill: string) => {
+    setFormData(prev => ({
+      ...prev,
+      skills: prev.skills.includes(skill)
+        ? prev.skills.filter(s => s !== skill)
+        : [...prev.skills, skill]
+    }));
+  };
+
+  const addCustomSkill = () => {
+    if (skillInput.trim() && !formData.skills.includes(skillInput.trim())) {
+      setFormData(prev => ({
+        ...prev,
+        skills: [...prev.skills, skillInput.trim()]
+      }));
+      setSkillInput("");
+    }
+  };
+
+  const addBenefit = () => {
+    if (benefitInput.trim() && !formData.benefits.includes(benefitInput.trim())) {
+      setFormData(prev => ({
+        ...prev,
+        benefits: [...prev.benefits, benefitInput.trim()]
+      }));
+      setBenefitInput("");
+    }
+  };
+
+  const removeBenefit = (benefit: string) => {
+    setFormData(prev => ({
+      ...prev,
+      benefits: prev.benefits.filter(b => b !== benefit)
+    }));
   };
 
   return (
     <div className="container max-w-4xl mx-auto py-8 px-4 space-y-6">
+      {/* Header */}
       <div className="flex items-center gap-4">
         <Link href="/dashboard/company/jobs">
-          <Button variant="outline" size="icon">
-            <ArrowLeft className="w-4 h-4" />
+          <Button variant="ghost" size="icon">
+            <ArrowLeft className="w-5 h-5" />
           </Button>
         </Link>
         <div>
-          <h1 className="text-3xl font-bold">Post a New Job</h1>
-          <p className="text-muted-foreground">Fill in the details to create a job posting</p>
+          <h1 className="text-3xl font-bold flex items-center gap-2">
+            <Briefcase className="w-8 h-8" />
+            Post a New Job
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            Fill in the details to post a job opening
+          </p>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Basic Information */}
+      {/* Form */}
+      <form onSubmit={handleSubmit}>
         <Card>
           <CardHeader>
-            <CardTitle>Basic Information</CardTitle>
-            <CardDescription>Essential details about the job</CardDescription>
+            <CardTitle>Job Details</CardTitle>
+            <CardDescription>Provide information about the position</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="title">
-                Job Title <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="title"
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                placeholder="e.g., Software Engineer Intern"
-                required
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="description">
-                Short Description <span className="text-red-500">*</span>
-              </Label>
-              <textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Brief overview of the role (200-300 characters)"
-                className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                required
-              />
-            </div>
-
+          <CardContent className="space-y-6">
+            {/* Basic Info */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="type">
-                  Job Type <span className="text-red-500">*</span>
-                </Label>
-                <select
-                  id="type"
-                  value={formData.type}
-                  onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              <div className="space-y-2">
+                <Label htmlFor="title">Job Title *</Label>
+                <Input
+                  id="title"
+                  placeholder="e.g., Software Engineer"
+                  value={formData.title}
+                  onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
                   required
-                >
-                  <option value="internship">Internship</option>
-                  <option value="full-time">Full-Time</option>
-                </select>
+                />
               </div>
 
-              <div>
-                <Label htmlFor="location">
-                  Location <span className="text-red-500">*</span>
-                </Label>
+              <div className="space-y-2">
+                <Label htmlFor="type">Job Type *</Label>
+                <select
+                  id="type"
+                  className="w-full h-10 px-3 py-2 text-sm rounded-md border border-input bg-background"
+                  value={formData.type}
+                  onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value }))}
+                >
+                  <option value="full-time">Full-Time</option>
+                  <option value="internship">Internship</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Description */}
+            <div className="space-y-2">
+              <Label htmlFor="description">Job Description *</Label>
+              <Textarea
+                id="description"
+                placeholder="Describe the role, responsibilities, and requirements..."
+                value={formData.description}
+                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                rows={8}
+                required
+              />
+            </div>
+
+            {/* Location & Salary */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="location">Location *</Label>
                 <Input
                   id="location"
-                  value={formData.location}
-                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                   placeholder="e.g., Bangalore, India"
+                  value={formData.location}
+                  onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
                   required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="salary">Salary/Package</Label>
+                <Input
+                  id="salary"
+                  placeholder="e.g., 10-12 LPA"
+                  value={formData.salary}
+                  onChange={(e) => setFormData(prev => ({ ...prev, salary: e.target.value }))}
                 />
               </div>
             </div>
 
-            <div>
-              <Label htmlFor="salary">Salary/Stipend</Label>
-              <Input
-                id="salary"
-                value={formData.salary}
-                onChange={(e) => setFormData({ ...formData, salary: e.target.value })}
-                placeholder="e.g., 5-7 LPA or 20k/month"
-              />
-            </div>
-          </CardContent>
-        </Card>
+            {/* CGPA & Deadline */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="cgpa">Minimum CGPA</Label>
+                <Input
+                  id="cgpa"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max="10"
+                  placeholder="e.g., 7.0"
+                  value={formData.cgpaCutoff}
+                  onChange={(e) => setFormData(prev => ({ ...prev, cgpaCutoff: e.target.value }))}
+                />
+              </div>
 
-        {/* Eligibility Criteria */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Eligibility Criteria</CardTitle>
-            <CardDescription>Define who can apply for this job</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="cgpaCutoff">Minimum CGPA</Label>
-              <Input
-                id="cgpaCutoff"
-                type="number"
-                step="0.01"
-                min="0"
-                max="10"
-                value={formData.cgpaCutoff}
-                onChange={(e) => setFormData({ ...formData, cgpaCutoff: e.target.value })}
-                placeholder="e.g., 7.5"
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Leave blank for no CGPA requirement
-              </p>
+              <div className="space-y-2">
+                <Label htmlFor="deadline">Application Deadline</Label>
+                <Input
+                  id="deadline"
+                  type="datetime-local"
+                  value={formData.deadline}
+                  onChange={(e) => setFormData(prev => ({ ...prev, deadline: e.target.value }))}
+                />
+              </div>
             </div>
 
-            <div>
+            {/* Eligible Courses */}
+            <div className="space-y-2">
               <Label>Eligible Courses</Label>
-              <div className="flex flex-wrap gap-2 mt-2">
-                {["CSE", "ECE", "EEE", "AIML"].map((course) => (
-                  <button
+              <p className="text-xs text-muted-foreground">Select all applicable courses (leave empty for all)</p>
+              <div className="flex flex-wrap gap-2">
+                {COURSES.map(course => (
+                  <Button
                     key={course}
                     type="button"
-                    onClick={() => handleCourseToggle(course)}
-                    className={`px-3 py-1 rounded-full text-sm border transition-colors ${
-                      formData.eligibleCourses.includes(course)
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "bg-background border-input hover:bg-accent"
-                    }`}
+                    variant={formData.eligibleCourses.includes(course) ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => toggleCourse(course)}
                   >
                     {course}
-                  </button>
+                  </Button>
                 ))}
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Leave empty to allow all courses
-              </p>
             </div>
 
-            <div>
+            {/* Eligible Degrees */}
+            <div className="space-y-2">
               <Label>Eligible Degrees</Label>
-              <div className="flex flex-wrap gap-2 mt-2">
-                {["BTech", "MTech", "MCA"].map((degree) => (
-                  <button
+              <p className="text-xs text-muted-foreground">Select all applicable degrees (leave empty for all)</p>
+              <div className="flex flex-wrap gap-2">
+                {DEGREES.map(degree => (
+                  <Button
                     key={degree}
                     type="button"
-                    onClick={() => handleDegreeToggle(degree)}
-                    className={`px-3 py-1 rounded-full text-sm border transition-colors ${
-                      formData.eligibleDegrees.includes(degree)
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "bg-background border-input hover:bg-accent"
-                    }`}
+                    variant={formData.eligibleDegrees.includes(degree) ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => toggleDegree(degree)}
                   >
                     {degree}
-                  </button>
+                  </Button>
                 ))}
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Leave empty to allow all degrees
-              </p>
             </div>
-          </CardContent>
-        </Card>
 
-        {/* About the Role */}
-        <Card>
-          <CardHeader>
-            <CardTitle>About the Role</CardTitle>
-            <CardDescription>Detailed description of responsibilities and requirements</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="border rounded-md">
-              <div className="flex items-center gap-1 p-2 border-b bg-muted/50">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => editor?.chain().focus().toggleBold().run()}
-                  className={editor?.isActive("bold") ? "bg-accent" : ""}
-                >
-                  <Bold className="h-4 w-4" />
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => editor?.chain().focus().toggleItalic().run()}
-                  className={editor?.isActive("italic") ? "bg-accent" : ""}
-                >
-                  <Italic className="h-4 w-4" />
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()}
-                  className={editor?.isActive("heading", { level: 2 }) ? "bg-accent" : ""}
-                >
-                  <Heading2 className="h-4 w-4" />
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => editor?.chain().focus().toggleBulletList().run()}
-                  className={editor?.isActive("bulletList") ? "bg-accent" : ""}
-                >
-                  <List className="h-4 w-4" />
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => editor?.chain().focus().toggleOrderedList().run()}
-                  className={editor?.isActive("orderedList") ? "bg-accent" : ""}
-                >
-                  <ListOrdered className="h-4 w-4" />
-                </Button>
-              </div>
-              <EditorContent editor={editor} />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Job Description Upload */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Job Description (PDF)</CardTitle>
-            <CardDescription>Upload a detailed JD document (optional)</CardDescription>
-          </CardHeader>
-          <CardContent>
+            {/* Required Skills */}
             <div className="space-y-2">
-              <Label htmlFor="jd-upload">Upload JD (PDF)</Label>
-              <Input
-                id="jd-upload"
-                type="file"
-                accept=".pdf"
-                onChange={handleJdUpload}
-                disabled={uploading}
-              />
-              {uploading && <p className="text-sm text-muted-foreground">Uploading...</p>}
-              {formData.jdUrl && (
-                <p className="text-sm text-green-600">✓ JD uploaded successfully</p>
+              <Label>Required Skills</Label>
+              <p className="text-xs text-muted-foreground">Select common skills or add custom ones</p>
+              <div className="flex flex-wrap gap-2 mb-2">
+                {COMMON_SKILLS.map(skill => (
+                  <Button
+                    key={skill}
+                    type="button"
+                    variant={formData.skills.includes(skill) ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => toggleSkill(skill)}
+                  >
+                    {skill}
+                  </Button>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Add custom skill..."
+                  value={skillInput}
+                  onChange={(e) => setSkillInput(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addCustomSkill())}
+                />
+                <Button type="button" onClick={addCustomSkill}>Add</Button>
+              </div>
+              {formData.skills.length > 0 && (
+                <p className="text-sm text-muted-foreground mt-2">
+                  Selected: {formData.skills.join(", ")}
+                </p>
               )}
             </div>
-          </CardContent>
-        </Card>
 
-        {/* Skills */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Required Skills</CardTitle>
-            <CardDescription>Add skills required for this role</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex gap-2">
-              <Input
-                value={skillInput}
-                onChange={(e) => setSkillInput(e.target.value)}
-                placeholder="e.g., React, Node.js, Python"
-                onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), addSkill())}
-              />
-              <Button type="button" onClick={addSkill} variant="outline">
-                Add
+            {/* Benefits */}
+            <div className="space-y-2">
+              <Label>Benefits & Perks</Label>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="e.g., Health Insurance, Remote Work..."
+                  value={benefitInput}
+                  onChange={(e) => setBenefitInput(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addBenefit())}
+                />
+                <Button type="button" onClick={addBenefit}>Add</Button>
+              </div>
+              {formData.benefits.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {formData.benefits.map(benefit => (
+                    <span
+                      key={benefit}
+                      className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-primary/10 text-sm"
+                    >
+                      {benefit}
+                      <button
+                        type="button"
+                        onClick={() => removeBenefit(benefit)}
+                        className="ml-1 hover:text-destructive"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Submit Buttons */}
+            <div className="flex gap-4 pt-4">
+              <Button type="submit" disabled={loading} className="flex-1">
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Posting Job...
+                  </>
+                ) : (
+                  "Post Job"
+                )}
               </Button>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {formData.skills.map((skill, index) => (
-                <span
-                  key={index}
-                  className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm flex items-center gap-2"
-                >
-                  {skill}
-                  <button
-                    type="button"
-                    onClick={() => removeSkill(index)}
-                    className="hover:text-destructive"
-                  >
-                    ×
-                  </button>
-                </span>
-              ))}
+              <Link href="/dashboard/company/jobs" className="flex-1">
+                <Button type="button" variant="outline" className="w-full">
+                  Cancel
+                </Button>
+              </Link>
             </div>
           </CardContent>
         </Card>
-
-        {/* Benefits */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Benefits</CardTitle>
-            <CardDescription>Perks and benefits of this role</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex gap-2">
-              <Input
-                value={benefitInput}
-                onChange={(e) => setBenefitInput(e.target.value)}
-                placeholder="e.g., Health Insurance, Work from Home"
-                onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), addBenefit())}
-              />
-              <Button type="button" onClick={addBenefit} variant="outline">
-                Add
-              </Button>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {formData.benefits.map((benefit, index) => (
-                <span
-                  key={index}
-                  className="px-3 py-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded-full text-sm flex items-center gap-2"
-                >
-                  {benefit}
-                  <button
-                    type="button"
-                    onClick={() => removeBenefit(index)}
-                    className="hover:text-destructive"
-                  >
-                    ×
-                  </button>
-                </span>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Submit Button */}
-        <div className="flex justify-end gap-4">
-          <Link href="/dashboard/company/jobs">
-            <Button type="button" variant="outline">
-              Cancel
-            </Button>
-          </Link>
-          <Button type="submit" disabled={saving}>
-            {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-            Post Job
-          </Button>
-        </div>
       </form>
     </div>
   );
 }
-
