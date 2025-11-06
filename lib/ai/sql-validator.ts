@@ -232,6 +232,55 @@ export function validateSQL(sql: string, role: string): void {
     }
   }
 
+  // Check for phantom table aliases
+  // Find all table/CTE names and aliases
+  const validPrefixes = new Set<string>();
+  
+  // Add actual table names
+  Object.keys(permissions).forEach(table => {
+    if (permissions[table].allowed) {
+      validPrefixes.add(table.toLowerCase());
+    }
+  });
+  
+  // Add CTEs
+  cteNames.forEach(cte => validPrefixes.add(cte));
+  
+  // Add table aliases (e.g., "FROM students s" -> "s" is valid)
+  const aliasMatches = sql.match(/(?:FROM|JOIN)\s+(\w+)\s+(?:AS\s+)?(\w+)(?:\s+ON|\s+WHERE|\s+JOIN|\s+LEFT|\s+RIGHT|\s+INNER|\s+CROSS|\s+,|\s+GROUP|\s+ORDER|\s+LIMIT|$)/gi) || [];
+  aliasMatches.forEach(match => {
+    const parts = match.trim().split(/\s+/);
+    // Pattern: FROM table alias or FROM table AS alias
+    if (parts.length >= 3) {
+      const alias = parts[parts.length - 1].toLowerCase().replace(/[,;)\s]/g, '');
+      // Make sure it's not a SQL keyword
+      const keywords = ['on', 'where', 'join', 'left', 'right', 'inner', 'cross', 'group', 'order', 'limit'];
+      if (alias && !keywords.includes(alias)) {
+        validPrefixes.add(alias);
+      }
+    }
+  });
+  
+  console.log("🔍 Valid table prefixes:", Array.from(validPrefixes));
+  
+  // Now find all column references with prefixes (e.g., "table.column")
+  const columnRefs = sql.match(/\b(\w+)\.(\w+)/g) || [];
+  for (const ref of columnRefs) {
+    const [prefix] = ref.split('.');
+    const lowerPrefix = prefix.toLowerCase();
+    
+    // Skip if it's a valid prefix
+    if (validPrefixes.has(lowerPrefix)) continue;
+    
+    // Skip if it's a PostgreSQL function
+    if (PG_FUNCTIONS.has(lowerPrefix)) continue;
+    
+    // This is a phantom alias!
+    throw new SQLValidationError(
+      `Invalid table reference: "${prefix}" in "${ref}". This table or alias was not defined in the FROM clause.`
+    );
+  }
+
   console.log("✅ SQL validation passed");
 }
 

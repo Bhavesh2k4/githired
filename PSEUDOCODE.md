@@ -261,7 +261,7 @@ CLASS ATSAnalyzer:
   FUNCTION analyzeResume(pdfBuffer, jobDescription?):
     text = extractPDFText(pdfBuffer)
     prompt = buildATSPrompt(text, jobDescription)
-    analysis = Gemini.generate(prompt)
+    analysis = Generate(prompt)
     RETURN {
       score: 0-100,
       keywords: extracted[],
@@ -272,19 +272,12 @@ CLASS ATSAnalyzer:
 CLASS ProfileAnalyzer:
   FUNCTION analyzeProfile(studentProfile):
     prompt = buildProfilePrompt(profile)
-    analysis = Gemini.generate(prompt)
+    analysis = Generate(prompt)
     RETURN {
       gaps: [skill, experience, project areas],
       improvements: [actionable suggestions],
       marketInsights: [demand, trends]
     }
-
-CLASS GeminiClient:
-  MODEL = "gemini-2.0-flash-exp"
-  
-  FUNCTION generate(prompt, config?):
-    response = callGeminiAPI(prompt, model, config)
-    RETURN parseResponse(response)
 ```
 
 ## MODULE 9: FILE STORAGE (lib/storage.ts)

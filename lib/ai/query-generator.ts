@@ -170,6 +170,13 @@ REQUIREMENTS:
 10. Limit results to reasonable numbers (e.g., top 10, top 20)
 11. NEVER use jsonb_array_elements() on TEXT[] columns - use unnest() instead
 12. Use comma syntax for simple joins/unnest: "FROM table1, unnest(array) AS item" instead of CROSS JOIN
+13. CRITICAL SQL SYNTAX RULES:
+    - NEVER use phantom table aliases (e.g., "WHERE GROUP.job_id" is WRONG - should be "WHERE job_id")
+    - Only use table aliases that you explicitly defined in the FROM clause
+    - Column references should ONLY be prefixed with actual table names or aliases you created
+    - Example CORRECT: "FROM applications a WHERE a.job_id IN (...)"
+    - Example WRONG: "FROM applications WHERE GROUP.job_id IN (...)" (GROUP is not a table)
+14. Always use proper spacing and line breaks in SQL for readability
 
 OUTPUT FORMAT: Return ONLY a valid JSON object with these exact fields:
 - sql: (string) The PostgreSQL SELECT query

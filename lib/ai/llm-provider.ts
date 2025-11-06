@@ -95,7 +95,7 @@ function getGeminiProvider(): LLMProvider {
           : prompt;
 
         const result = await model.generateContent({
-          contents: fullPrompt,
+          contents: [{ parts: [{ text: fullPrompt }] }],
           generationConfig,
         });
         
@@ -138,7 +138,7 @@ function getGeminiProvider(): LLMProvider {
         }
 
         const result = await model.generateContent({
-          contents: fullPrompt,
+          contents: [{ parts: [{ text: fullPrompt }] }],
           generationConfig,
         });
         

@@ -197,7 +197,7 @@ export function AIAssistantModal() {
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-[95vw] w-[1400px] max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogContent className="!w-[50vw] !max-w-[1400px] max-h-[90vh] overflow-hidden flex flex-col sm:!max-w-[50vw]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-primary" />

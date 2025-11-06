@@ -57,17 +57,35 @@ export function DynamicChart({ data, chartType, visualization }: DynamicChartPro
     const metrics = data[0];
     const keys = Object.keys(metrics);
     
+    // Helper function to format numbers to 3 decimal places
+    const formatNumber = (value: any): string => {
+      // Try to parse as number
+      const num = typeof value === 'number' ? value : parseFloat(value);
+      
+      // If it's not a valid number, return as string
+      if (isNaN(num)) {
+        return String(value);
+      }
+      
+      // If it's a whole number, don't show decimals
+      if (Number.isInteger(num)) {
+        return num.toString();
+      }
+      
+      // Round to 3 decimal places and remove trailing zeros
+      const rounded = Math.round(num * 1000) / 1000;
+      return rounded.toString();
+    };
+    
     return (
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-8 w-full">
         {keys.map((key) => (
-          <Card key={key} className="p-6">
-            <div className="text-sm text-muted-foreground mb-2">
+          <Card key={key} className="p-10 flex flex-col gap-4 flex-1 min-w-0">
+            <div className="text-base font-medium text-muted-foreground whitespace-nowrap overflow-hidden text-ellipsis">
               {key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
             </div>
-            <div className="text-3xl font-bold">
-              {typeof metrics[key] === 'number' 
-                ? metrics[key].toLocaleString()
-                : metrics[key]}
+            <div className="text-4xl font-bold tabular-nums whitespace-nowrap overflow-hidden text-ellipsis">
+              {formatNumber(metrics[key])}
             </div>
           </Card>
         ))}
