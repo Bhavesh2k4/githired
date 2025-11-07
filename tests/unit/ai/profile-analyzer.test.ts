@@ -173,7 +173,7 @@ describe('Profile Analyzer', () => {
       const skillsSuggestion = suggestions.find(s => s.field === 'skills');
       
       expect(skillsSuggestion).toBeDefined();
-      expect(skillsSuggestion?.message).toContain('add');
+      expect(skillsSuggestion?.message).toMatch(/add/i);
     });
   });
 

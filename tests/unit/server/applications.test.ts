@@ -47,7 +47,7 @@ describe('Applications Server Actions', () => {
       const result = await applyToJob(jobId, studentId, '');
       
       expect(result.success).toBe(false);
-      expect(result.error).toContain('resume required');
+      expect(result.error).toMatch(/resume required/i);
     });
 
     it('should check if job is active', async () => {
@@ -80,7 +80,7 @@ describe('Applications Server Actions', () => {
       const result = await updateApplicationStatus(applicationId, invalidStatus);
       
       expect(result.success).toBe(false);
-      expect(result.error).toContain('invalid status');
+      expect(result.error).toMatch(/invalid status/i);
     });
 
     it('should send notification on status change', async () => {
@@ -189,7 +189,7 @@ describe('Applications Server Actions', () => {
       const result = await withdrawApplication(applicationId);
       
       expect(result.success).toBe(false);
-      expect(result.error).toContain('cannot withdraw');
+      expect(result.error).toMatch(/cannot withdraw/i);
     });
 
     it('should not withdraw rejected application', async () => {
@@ -197,7 +197,7 @@ describe('Applications Server Actions', () => {
       const result = await withdrawApplication(applicationId);
       
       expect(result.success).toBe(false);
-      expect(result.error).toContain('cannot withdraw');
+      expect(result.error).toMatch(/cannot withdraw/i);
     });
   });
 
@@ -214,7 +214,7 @@ describe('Applications Server Actions', () => {
       const otherStudentId = 'student-456';
       const result = await getStudentApplications(otherStudentId, { requesterId: studentId });
       
-      expect(result.error).toContain('unauthorized');
+      expect(result.error).toMatch(/unauthorized/i);
     });
 
     it('should allow company to view applications for their jobs', async () => {

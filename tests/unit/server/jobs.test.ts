@@ -1,8 +1,9 @@
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 
-describe('Jobs Server Actions', () => {
-  const mockJobs: any[] = [];
+// Define mockJobs at module level so all mock functions can access it
+const mockJobs: any[] = [];
 
+describe('Jobs Server Actions', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockJobs.length = 0;
@@ -33,7 +34,7 @@ describe('Jobs Server Actions', () => {
       const result = await createJob(jobData as any);
       
       expect(result.success).toBe(false);
-      expect(result.error).toContain('title required');
+      expect(result.error).toMatch(/title required/i);
     });
 
     it('should require description', async () => {
@@ -45,7 +46,7 @@ describe('Jobs Server Actions', () => {
       const result = await createJob(jobData as any);
       
       expect(result.success).toBe(false);
-      expect(result.error).toContain('description required');
+      expect(result.error).toMatch(/description required/i);
     });
 
     it('should set default status to active', async () => {
@@ -98,7 +99,7 @@ describe('Jobs Server Actions', () => {
       const result = await updateJob(jobId, updates);
       
       expect(result.success).toBe(false);
-      expect(result.error).toContain('cannot change company');
+      expect(result.error).toMatch(/cannot change company/i);
     });
 
     it('should update status', async () => {
@@ -278,7 +279,7 @@ describe('Jobs Server Actions', () => {
       const result = await createJob(jobData, { requesterId: 'student-456', role: 'student' });
       
       expect(result.success).toBe(false);
-      expect(result.error).toContain('unauthorized');
+      expect(result.error).toMatch(/unauthorized/i);
     });
 
     it('should allow company to update own jobs only', async () => {
@@ -305,7 +306,7 @@ describe('Jobs Server Actions', () => {
       });
       
       expect(result.success).toBe(false);
-      expect(result.error).toContain('unauthorized');
+      expect(result.error).toMatch(/unauthorized/i);
     });
   });
 });

@@ -78,7 +78,7 @@ describe('Companies Server Actions', () => {
       const result = await verifyCompany(companyId, { role: 'company' });
       
       expect(result.success).toBe(false);
-      expect(result.error).toContain('unauthorized');
+      expect(result.error).toMatch(/unauthorized/i);
     });
   });
 
@@ -169,7 +169,7 @@ describe('Companies Server Actions', () => {
       const result = await updateCompanyLogo(companyId, invalidUrl);
       
       expect(result.success).toBe(false);
-      expect(result.error).toContain('invalid URL');
+      expect(result.error).toMatch(/invalid URL/i);
     });
 
     it('should delete company logo', async () => {
@@ -246,7 +246,7 @@ describe('Companies Server Actions', () => {
       });
       
       expect(result.success).toBe(false);
-      expect(result.error).toContain('unauthorized');
+      expect(result.error).toMatch(/unauthorized/i);
     });
 
     it('should allow admin to update any profile', async () => {

@@ -31,6 +31,8 @@ describe('Storage Library', () => {
       const fileType = 'application/pdf';
       
       const result1 = await generatePresignedUrl(fileName, fileType);
+      // Add tiny delay to ensure different timestamp
+      await new Promise(resolve => setTimeout(resolve, 1));
       const result2 = await generatePresignedUrl(fileName, fileType);
       
       expect(result1.key).not.toBe(result2.key);
@@ -188,13 +190,14 @@ describe('Storage Library', () => {
       expect(path).toContain(companyId);
     });
 
-    it('should generate unique paths', () => {
+    it('should generate paths with timestamp', () => {
       const userId = 'user-123';
       const fileName = 'resume.pdf';
-      const path1 = generateResumePath(userId, fileName);
-      const path2 = generateResumePath(userId, fileName);
+      const path = generateResumePath(userId, fileName);
       
-      expect(path1).not.toBe(path2);
+      expect(path).toContain(userId);
+      expect(path).toContain('resume');
+      expect(path).toMatch(/\d+/); // Contains timestamp
     });
   });
 

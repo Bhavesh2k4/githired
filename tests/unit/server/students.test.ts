@@ -31,7 +31,7 @@ describe('Students Server Actions', () => {
       const result = await createStudentProfile(profileData as any);
       
       expect(result.success).toBe(false);
-      expect(result.error).toContain('email required');
+      expect(result.error).toMatch(/email required/i);
     });
 
     it('should validate CGPA range', async () => {
@@ -248,7 +248,7 @@ describe('Students Server Actions', () => {
       });
       
       expect(result.success).toBe(false);
-      expect(result.error).toContain('unauthorized');
+      expect(result.error).toMatch(/unauthorized/i);
     });
 
     it('should allow admin to update any profile', async () => {

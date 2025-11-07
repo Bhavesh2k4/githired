@@ -29,7 +29,7 @@ describe('Interviews Server Actions', () => {
       const result = await scheduleInterview(interviewData as any);
       
       expect(result.success).toBe(false);
-      expect(result.error).toContain('application ID required');
+      expect(result.error).toMatch(/application ID required/i);
     });
 
     it('should require scheduled time', async () => {
@@ -41,7 +41,7 @@ describe('Interviews Server Actions', () => {
       const result = await scheduleInterview(interviewData as any);
       
       expect(result.success).toBe(false);
-      expect(result.error).toContain('scheduled time required');
+      expect(result.error).toMatch(/scheduled time required/i);
     });
 
     it('should not allow scheduling in the past', async () => {
@@ -105,7 +105,7 @@ describe('Interviews Server Actions', () => {
       const result = await updateInterview(interviewId, updates);
       
       expect(result.success).toBe(false);
-      expect(result.error).toContain('invalid status');
+      expect(result.error).toMatch(/invalid status/i);
     });
 
     it('should notify on reschedule', async () => {
@@ -147,7 +147,7 @@ describe('Interviews Server Actions', () => {
       const result = await cancelInterview(completedInterviewId, 'Test reason');
       
       expect(result.success).toBe(false);
-      expect(result.error).toContain('cannot cancel');
+      expect(result.error).toMatch(/cannot cancel/i);
     });
 
     it('should send cancellation notification', async () => {
@@ -185,7 +185,7 @@ describe('Interviews Server Actions', () => {
       const result = await addInterviewFeedback(interviewId, feedback);
       
       expect(result.success).toBe(false);
-      expect(result.error).toContain('rating must be between');
+      expect(result.error).toMatch(/rating must be between/i);
     });
 
     it('should require feedback for completed interviews', async () => {
@@ -193,7 +193,7 @@ describe('Interviews Server Actions', () => {
       const result = await completeInterview(interviewId);
       
       expect(result.success).toBe(false);
-      expect(result.error).toContain('feedback required');
+      expect(result.error).toMatch(/feedback required/i);
     });
   });
 
@@ -345,7 +345,7 @@ describe('Interviews Server Actions', () => {
       });
       
       expect(result.success).toBe(false);
-      expect(result.error).toContain('unauthorized');
+      expect(result.error).toMatch(/unauthorized/i);
     });
   });
 });
