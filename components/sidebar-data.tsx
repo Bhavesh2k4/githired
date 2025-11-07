@@ -45,6 +45,7 @@ export function SidebarData({ data }: SidebarDataProps) {
       {filteredData.map((item) => (
         <Collapsible
           key={item.title}
+          id={`collapsible-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
           title={item.title}
           defaultOpen
           className="group/collapsible"

@@ -18,69 +18,107 @@ TABLES:
 
 students:
   - id (text, primary key)
-  - user_id (text, foreign key to user.id)
-  - email (text)
+  - user_id (text, foreign key to user.id, unique)
+  - email (text, not null)
   - name (text)
-  - srn (text)
+  - srn (text, unique) - student registration number
   - phone (text)
-  - cgpa (text) - student's current CGPA
+  - location (text)
+  - preferred_locations (text[]) - ARRAY of location strings
+  - bio (text)
+  - about_me (text)
+  - headline (text)
+  - cgpa (text) - student's current CGPA (stored as text, cast to NUMERIC for calculations)
   - degree (text) - BTech, MTech, MCA
   - course (text) - CSE, ECE, EEE, AIML
-  - skills (text[]) - ARRAY of skill strings, use unnest(skills) to expand
+  - education (jsonb) - array of education objects
+  - experience (jsonb) - array of experience objects with start_year and end_year
+  - projects (jsonb) - array of project objects
   - certifications (jsonb) - array of certification objects
-  - experience (jsonb) - array of experience objects
-  - resumes (jsonb) - array of resume objects
-  - preferred_locations (text[]) - ARRAY of location strings
-  - status (text) - pending, approved, rejected
+  - achievements (jsonb) - array of achievement objects
+  - skills (text[]) - ARRAY of skill strings, use unnest(skills) to expand or array_length(skills, 1) to count
+  - github_url (text)
+  - linkedin_url (text)
+  - portfolio_url (text)
+  - leetcode_url (text)
+  - resumes (jsonb) - array of resume objects {label, url, uploadedAt}
+  - resume_url (text) - legacy field, kept for backward compatibility
+  - status (text) - pending, approved, rejected, banned (default: pending)
   - created_at (timestamp)
+  - updated_at (timestamp)
 
 companies:
   - id (text, primary key)
-  - user_id (text, foreign key to user.id)
-  - name (text)
-  - email (text)
-  - industry (text)
-  - size (text)
+  - user_id (text, foreign key to user.id, unique)
+  - name (text, not null)
+  - contact_email (text, not null)
+  - contact_phone (text)
+  - logo_url (text)
+  - website_url (text)
+  - linkedin_url (text)
+  - twitter_url (text)
   - location (text)
-  - website (text)
+  - about (text)
+  - industry (text)
+  - size (text) - e.g., "1-10", "11-50", "51-200", "201-500", "501-1000", "1000+"
+  - founded_year (text)
   - specialties (text[]) - ARRAY of specialty strings
   - tech_stack (text[]) - ARRAY of technology strings
-  - status (text) - pending, approved, rejected
+  - benefits (jsonb) - array of benefit objects
+  - culture (text)
+  - office_locations (jsonb) - array of location objects
+  - verified (boolean, default: false)
+  - status (text) - pending, approved, rejected, banned (default: pending)
+  - analytics (jsonb) - {profileViews, jobPosts, applications}
   - created_at (timestamp)
+  - updated_at (timestamp)
 
 jobs:
   - id (text, primary key)
   - company_id (text, foreign key to companies.id)
-  - title (text)
-  - description (text)
-  - type (text) - internship, full-time
-  - location (text)
-  - cgpa_cutoff (text) - minimum CGPA required
-  - eligible_courses (text[]) - ARRAY of allowed courses, use = ANY(eligible_courses) to check
-  - eligible_degrees (text[]) - ARRAY of allowed degrees, use = ANY(eligible_degrees) to check
+  - title (text, not null)
+  - description (text, not null)
+  - type (text, not null) - internship, full-time
+  - location (text, not null)
+  - cgpa_cutoff (text) - minimum CGPA required (stored as text, cast to NUMERIC for comparisons)
+  - eligible_courses (text[]) - ARRAY of allowed courses (CSE, ECE, EEE, AIML), use = ANY(eligible_courses) to check
+  - eligible_degrees (text[]) - ARRAY of allowed degrees (BTech, MTech, MCA), use = ANY(eligible_degrees) to check
   - salary (text) - salary in INR (e.g., "10 LPA" or "10-15 LPA")
-  - skills (text[]) - ARRAY of required skill strings, use unnest(skills) to expand
+  - skills (text[]) - ARRAY of required skill strings, use unnest(skills) to expand or = ANY(skills) to check
   - benefits (text[]) - ARRAY of benefit strings
-  - status (text) - active, stopped
+  - deadline (timestamp) - application deadline
+  - jd_url (text) - job description PDF URL
+  - about_role (jsonb) - rich text content
+  - status (text) - active, stopped (default: active)
   - analytics (jsonb) - {views: number, applications: number}
   - created_at (timestamp)
+  - updated_at (timestamp)
 
 applications:
   - id (text, primary key)
   - job_id (text, foreign key to jobs.id)
   - student_id (text, foreign key to students.id)
-  - status (text) - pending, oa, interview, selected, rejected
-  - student_cgpa (text) - CGPA at time of application
-  - student_course (text) - course at time of application
-  - student_degree (text) - degree at time of application
-  - applied_at (timestamp)
+  - status (text) - pending, oa, interview_round_1, interview_round_2, interview_round_3, selected, rejected (default: pending)
+  - student_cgpa (text) - CGPA at time of application (snapshot)
+  - student_course (text) - course at time of application (snapshot)
+  - student_degree (text) - degree at time of application (snapshot)
+  - cover_letter (text)
+  - resume_url (text) - specific resume used for this application
+  - resume_label (text) - label of the resume chosen by student
+  - applied_at (timestamp, not null)
+  - created_at (timestamp)
+  - updated_at (timestamp)
+  - UNIQUE constraint on (job_id, student_id) - one application per student per job
 
 user:
   - id (text, primary key)
-  - name (text)
-  - email (text)
-  - role (text) - student, company, admin
+  - name (text, not null)
+  - email (text, not null, unique)
+  - email_verified (boolean, not null)
+  - image (text)
+  - role (text, not null) - student, company, admin
   - created_at (timestamp)
+  - updated_at (timestamp)
 
 IMPORTANT NOTES AND EXAMPLES:
 
@@ -92,9 +130,24 @@ IMPORTANT NOTES AND EXAMPLES:
    
    - To check if value exists in array:
      ✅ CORRECT: WHERE 'CSE' = ANY(eligible_courses)
+     ✅ CORRECT: WHERE skill = ANY(student_skills_array)
+     ❌ WRONG: WHERE skill = student_skills_array (comparing text to text[] - type mismatch)
+   
+   - To check if value does NOT exist in array:
+     ✅ CORRECT: WHERE skill NOT IN (SELECT unnest(student_skills_array))
+     ✅ CORRECT: WHERE NOT (skill = ANY(student_skills_array))
+     ❌ WRONG: WHERE student_skill = job_skills (comparing single text to text array)
    
    - To count array elements:
      ✅ CORRECT: SELECT array_length(skills, 1) FROM students
+   
+   - CRITICAL: When comparing skills from jobs vs student skills:
+     ✅ CORRECT: Expand both arrays, then compare individual values:
+       WITH JobSkills AS (SELECT job_id, unnest(skills) AS skill FROM jobs),
+            StudentSkills AS (SELECT unnest(skills) AS skill FROM students WHERE id = 'x')
+       SELECT js.skill FROM JobSkills js 
+       WHERE js.skill NOT IN (SELECT skill FROM StudentSkills)
+     ❌ WRONG: Comparing arrays directly or comparing single value to array
 
 2. JSONB Operations:
    - To expand JSONB array: jsonb_array_elements(column)
@@ -107,12 +160,23 @@ IMPORTANT NOTES AND EXAMPLES:
    - Always cast TEXT to NUMERIC for math operations
      ✅ CORRECT: WHERE CAST(cgpa AS NUMERIC) >= CAST(cgpa_cutoff AS NUMERIC)
      ✅ CORRECT: AVG(CAST(cgpa AS NUMERIC))
+   - ALWAYS use ROUND() for CGPA calculations to avoid excessive decimal places:
+     ✅ CORRECT: ROUND(AVG(CAST(cgpa AS NUMERIC)), 2) -- rounds to 2 decimal places
+     ✅ CORRECT: ROUND(CAST(cgpa AS NUMERIC), 3) -- rounds to 3 decimal places
+     ❌ WRONG: AVG(CAST(cgpa AS NUMERIC)) -- produces 15+ decimal places
+   - CRITICAL: ROUND() in PostgreSQL requires NUMERIC type, not DOUBLE PRECISION:
+     ✅ CORRECT: ROUND(CAST(value AS NUMERIC), 2) or ROUND(value::numeric, 2)
+     ❌ WRONG: ROUND(value, 2) if value is double precision -- will fail
 
 4. Common Query Patterns:
    - Top skills from students:
      SELECT skill, COUNT(*) as count 
      FROM students, unnest(skills) AS skill 
      GROUP BY skill ORDER BY count DESC LIMIT 10
+   - CRITICAL: When using unnest() or array operations with COUNT(), you MUST use GROUP BY:
+     ✅ CORRECT: SELECT skill, COUNT(*) FROM jobs, unnest(skills) AS skill GROUP BY skill ORDER BY COUNT(*) DESC LIMIT 10
+     ❌ WRONG: SELECT skill, COUNT(*) FROM jobs, unnest(skills) AS skill (missing GROUP BY - will fail or return wrong results)
+   - Always include ORDER BY and LIMIT when query asks for "top N" or "most frequent"
    
    - Students eligible for a job:
      SELECT s.* FROM students s 
@@ -140,11 +204,14 @@ function buildPrompt(naturalQuery: string, role: string, context: {
 
   return `You are a PostgreSQL SQL expert. Convert the following natural language query to a valid PostgreSQL SELECT query.
 
+================================================================================
+DATABASE SCHEMA - USE THIS EXACT STRUCTURE FOR ALL QUERIES
+================================================================================
+${DATABASE_SCHEMA}
+================================================================================
+
 USER ROLE: ${role}
 ALLOWED TABLES: ${allowedTables.join(', ')}
-
-DATABASE SCHEMA:
-${DATABASE_SCHEMA}
 
 CONTEXT:
 ${role === 'student' ? `- Current student ID: ${context.studentId}` : ''}
@@ -176,7 +243,83 @@ REQUIREMENTS:
     - Column references should ONLY be prefixed with actual table names or aliases you created
     - Example CORRECT: "FROM applications a WHERE a.job_id IN (...)"
     - Example WRONG: "FROM applications WHERE GROUP.job_id IN (...)" (GROUP is not a table)
+    - When using aliases in CTEs, make sure to define them in the CTE's FROM clause:
+      ✅ CORRECT: WITH MyCTE AS (SELECT s.cgpa FROM students s) SELECT * FROM MyCTE
+      ❌ WRONG: WITH MyCTE AS (SELECT s.cgpa FROM students) SELECT * FROM MyCTE (alias 's' not defined)
+    - Always define table aliases in FROM/JOIN clauses before using them in SELECT
+    - CRITICAL: When creating CTEs, SELECT ALL columns you will reference later in the query:
+      ✅ CORRECT: WITH StudentData AS (SELECT id, course, degree, cgpa, skills FROM students WHERE id = 'x') ... WHERE StudentData.course = ANY(...)
+      ❌ WRONG: WITH StudentData AS (SELECT skills FROM students WHERE id = 'x') ... WHERE StudentData.course = ANY(...) (course not in CTE)
+      - If you need to check eligibility (course, degree, cgpa), include those columns in the CTE SELECT
+      - If you need to compare values later, include them in the CTE SELECT
+    - CRITICAL: When referencing columns from CTEs, use the ACTUAL column names from that CTE's SELECT clause:
+      ✅ CORRECT: WITH EligibleJobs AS (SELECT id, title FROM jobs) ... SELECT job_id FROM EligibleJobs, unnest(skills) AS skill GROUP BY id (use 'id', not 'job_id')
+      ✅ CORRECT: WITH EligibleJobs AS (SELECT id AS job_id, title FROM jobs) ... SELECT job_id FROM EligibleJobs (if you aliased it in SELECT)
+      ❌ WRONG: WITH EligibleJobs AS (SELECT id, title FROM jobs) ... SELECT job_id FROM EligibleJobs (job_id doesn't exist - use 'id')
+      - If a CTE selects 'id', use 'id' (or 'EligibleJobs.id'), not 'job_id' unless you explicitly aliased it
+      - Always check what columns are actually SELECTed in each CTE before referencing them
+    - CRITICAL: When using JOINs, ALWAYS qualify column names to avoid ambiguity:
+      ✅ CORRECT: FROM table1 t1 JOIN table2 t2 ON t1.id = t2.id WHERE t1.name = 'x'
+      ❌ WRONG: FROM table1 JOIN table2 ON table1.id = table2.id WHERE name = 'x' (which table's name?)
+      ✅ CORRECT: SELECT CourseCGPAs.cgpa FROM CourseCGPAs JOIN StudentData ON CourseCGPAs.cgpa = StudentData.cgpa
+      ❌ WRONG: SELECT cgpa FROM CourseCGPAs JOIN StudentData ON CourseCGPAs.cgpa = StudentData.cgpa (ambiguous cgpa)
+    - In window functions with JOINs, qualify all column references:
+      ✅ CORRECT: PERCENT_RANK() OVER (ORDER BY CAST(CourseCGPAs.cgpa AS NUMERIC))
+      ❌ WRONG: PERCENT_RANK() OVER (ORDER BY CAST(cgpa AS NUMERIC)) when multiple tables have cgpa
 14. Always use proper spacing and line breaks in SQL for readability
+15. CRITICAL: Prevent division by zero errors:
+    - ALWAYS check for NULL or zero before dividing
+    - Use NULLIF() to prevent division by zero: NULLIF(divisor, 0)
+    - Use COALESCE() to handle NULL values: COALESCE(value, 0)
+    - Example: CASE WHEN divisor > 0 THEN numerator / divisor ELSE 0 END
+    - Example: numerator / NULLIF(divisor, 0) - this returns NULL instead of error
+    - When calculating percentages or ratios, always wrap division in CASE statements that check for zero/NULL
+16. CRITICAL: Percentile calculations (PERCENT_RANK, PERCENTILE_CONT, etc.):
+    - PERCENT_RANK() is a WINDOW FUNCTION, NOT an aggregate function
+    - CORRECT syntax: PERCENT_RANK() OVER (ORDER BY column)
+    - WRONG syntax: PERCENT_RANK() WITHIN GROUP (ORDER BY column) - this is for aggregate functions like PERCENTILE_CONT
+    - PERCENT_RANK() returns 0-1 (0% to 100%), so multiply by 100 to get percentage: PERCENT_RANK() * 100
+    - PERCENT_RANK() returns DOUBLE PRECISION - must CAST to NUMERIC before ROUND():
+      ✅ CORRECT: ROUND(CAST(PERCENT_RANK() OVER (...) * 100 AS NUMERIC), 1)
+      ✅ CORRECT: ROUND((PERCENT_RANK() OVER (...) * 100)::numeric, 1)
+      ❌ WRONG: ROUND(PERCENT_RANK() OVER (...) * 100, 1) -- fails with "function does not exist"
+    - ALWAYS calculate percentiles over ALL rows first, then filter to get the specific student's value
+    - WRONG: SELECT PERCENT_RANK() OVER (...) FROM students WHERE id = 'student_id' (filters before calculating)
+    - CORRECT: Calculate percentile in a CTE over all students, then filter in the final SELECT:
+      WITH PercentileData AS (
+        SELECT id, ROUND(CAST(PERCENT_RANK() OVER (ORDER BY CAST(cgpa AS NUMERIC)) * 100 AS NUMERIC), 1) AS cgpa_percentile
+        FROM students
+      )
+      SELECT cgpa_percentile FROM PercentileData WHERE id = 'student_id'
+    - Always ROUND percentile to 1 decimal place for readability
+    - The percentile window function MUST see all students to calculate correctly
+    - Only filter AFTER the percentile is calculated, not before
+    - When using PERCENT_RANK() in CTEs, ensure the window function operates on the full dataset without WHERE filters
+    - NEVER use PERCENT_RANK() WITHIN GROUP - use PERCENT_RANK() OVER instead
+    - If you need aggregate percentiles, use PERCENTILE_CONT() WITHIN GROUP (ORDER BY column) or PERCENTILE_DISC() WITHIN GROUP (ORDER BY column)
+    - IMPORTANT: There is NO 'percentile' column in any table - percentiles must be calculated using PERCENT_RANK() window function
+17. CRITICAL: Distribution queries with student-specific metrics:
+    - When showing distributions (e.g., CGPA distribution) with student-specific values (e.g., student's percentile):
+      - Calculate the student's metric ONCE in a separate CTE using PERCENT_RANK() over the full dataset
+      - Include that value in ALL distribution rows using a scalar subquery or CROSS JOIN
+      - NEVER recalculate the student's metric per row with a WHERE condition that might not match
+    - CORRECT pattern for CGPA metrics (single row):
+      WITH CourseStudents AS (
+        SELECT id, CAST(cgpa AS NUMERIC) AS cgpa_num 
+        FROM students 
+        WHERE course = (SELECT course FROM students WHERE id = 'current_student_id')
+      ),
+      PercentileData AS (
+        SELECT id, ROUND(CAST(PERCENT_RANK() OVER (ORDER BY cgpa_num) * 100 AS NUMERIC), 1) AS percentile
+        FROM CourseStudents
+      )
+      SELECT 
+        (SELECT cgpa FROM students WHERE id = 'current_student_id') AS my_cgpa,
+        (SELECT COUNT(*) FROM CourseStudents) AS total_students,
+        ROUND((SELECT AVG(cgpa_num) FROM CourseStudents), 2) AS course_avg_cgpa,
+        (SELECT percentile FROM PercentileData WHERE id = 'current_student_id') AS my_percentile
+    - This ensures the student's percentile (calculated over ALL students) appears correctly in all distribution rows
+    - The percentile value should be the same in every row since it represents the student's position in the overall distribution
 
 OUTPUT FORMAT: Return ONLY a valid JSON object with these exact fields:
 - sql: (string) The PostgreSQL SELECT query
@@ -236,17 +379,30 @@ export async function generateInsights(
   results: any[],
   chartType: string
 ): Promise<string> {
+  // Handle empty results
+  if (!results || results.length === 0) {
+    return "No data found for this query. This could mean:\n- There are no active jobs posted yet\n- The skills arrays in jobs are empty\n- Try checking if there are any jobs with skills listed";
+  }
+
   const prompt = `Analyze the following data and provide 3-5 key insights in natural language.
 
 ORIGINAL QUERY: "${query}"
 CHART TYPE: ${chartType}
 DATA: ${JSON.stringify(results.slice(0, 20))} ${results.length > 20 ? '(showing first 20 rows)' : ''}
 
+IMPORTANT CONTEXT:
+- All salaries are in INR (Indian Rupees) and are in LPA (Lakhs Per Annum) format
+- If you see a salary value like "30" or "30.00", it means "30 LPA" (30 Lakhs Per Annum = ₹30,00,000 per year)
+- Salary values like "10-15" mean "10-15 LPA" (₹10-15 Lakhs Per Annum)
+- NEVER interpret salary values as dollars ($) or per hour - they are always annual salaries in Lakhs (INR)
+- When mentioning salaries, always include "LPA" or "Lakhs Per Annum" in your response
+
 Provide insights that are:
 1. Actionable and specific
 2. Highlight important patterns or trends
 3. Written in friendly, professional tone
 4. Relevant to the user who asked the query
+5. Always use correct salary units (LPA/Lakhs Per Annum in INR)
 
 Format as markdown with bullet points. Keep it concise (max 200 words).`;
 

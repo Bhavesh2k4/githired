@@ -191,6 +191,20 @@ function getGeminiProvider(): LLMProvider {
       } catch (error: any) {
         console.error("Gemini Structured Response Error:", error);
         
+        // Check for quota/rate limit errors
+        if (error.status === 429 || 
+            error.message?.includes("429") || 
+            error.message?.includes("quota") || 
+            error.message?.includes("rate limit") ||
+            error.message?.includes("Too Many Requests")) {
+          const quotaError = new Error(
+            "AI service quota exceeded. The free tier has been reached. Please try again later or upgrade your API plan."
+          );
+          (quotaError as any).isQuotaError = true;
+          (quotaError as any).retryAfter = error.message?.match(/retry.*?(\d+)/i)?.[1] || null;
+          throw quotaError;
+        }
+        
         if (error.message?.includes("404") || error.message?.includes("not found")) {
           throw new Error(
             "Gemini API Error: Model not found. Please check your GEMINI_API_KEY and model name."

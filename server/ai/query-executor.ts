@@ -21,6 +21,8 @@ interface QueryExecutionResult {
   sql?: string; // Add SQL query for transparency
   explanation?: string; // Add explanation
   executionTime?: string; // Add execution time
+  isQuotaError?: boolean; // Indicates if error is due to quota/rate limit
+  retryAfter?: string | null; // Suggested retry time
 }
 
 async function getAuthContext() {
@@ -184,6 +186,20 @@ export async function executeAIQuery(
       return {
         success: false,
         error: "Query took too long to execute. Please try a simpler query."
+      };
+    }
+
+    // Check if it's a quota/rate limit error
+    if (error.isQuotaError || 
+        error.message?.includes("quota") || 
+        error.message?.includes("rate limit") ||
+        error.message?.includes("429") ||
+        error.message?.includes("Too Many Requests")) {
+      return {
+        success: false,
+        error: error.message || "AI service quota exceeded. The free tier has been reached. Please try again later or upgrade your API plan.",
+        isQuotaError: true,
+        retryAfter: error.retryAfter
       };
     }
 

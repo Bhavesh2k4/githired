@@ -80,11 +80,11 @@ export function DynamicChart({ data, chartType, visualization }: DynamicChartPro
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-8 w-full">
         {keys.map((key) => (
-          <Card key={key} className="p-10 flex flex-col gap-4 flex-1 min-w-0">
-            <div className="text-base font-medium text-muted-foreground whitespace-nowrap overflow-hidden text-ellipsis">
+          <Card key={key} className="p-6 flex flex-col gap-3 min-w-0">
+            <div className="text-sm font-medium text-muted-foreground break-words">
               {key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
             </div>
-            <div className="text-4xl font-bold tabular-nums whitespace-nowrap overflow-hidden text-ellipsis">
+            <div className="text-2xl font-bold tabular-nums">
               {formatNumber(metrics[key])}
             </div>
           </Card>
@@ -96,6 +96,40 @@ export function DynamicChart({ data, chartType, visualization }: DynamicChartPro
   // Table type
   if (chartType === "table") {
     const keys = Object.keys(data[0] || {});
+    
+    // Helper function to format values based on column name
+    const formatCellValue = (key: string, value: any): string => {
+      // Format salary columns with LPA suffix
+      const salaryKeys = ['salary', 'avg_salary', 'average_salary', 'min_salary', 'max_salary', 'total_salary'];
+      const lowerKey = key.toLowerCase();
+      
+      if (salaryKeys.some(sk => lowerKey.includes(sk))) {
+        // If value is already a string with LPA, return as is
+        if (typeof value === 'string' && (value.includes('LPA') || value.includes('Lakh'))) {
+          return value;
+        }
+        // Otherwise, format as number with LPA suffix
+        const num = typeof value === 'number' ? value : parseFloat(value);
+        if (!isNaN(num)) {
+          // If it's a whole number, show without decimals
+          if (Number.isInteger(num)) {
+            return `${num} LPA`;
+          }
+          // Otherwise, round to 2 decimals
+          return `${num.toFixed(2)} LPA`;
+        }
+      }
+      
+      // Format other numeric values
+      if (typeof value === 'number') {
+        if (Number.isInteger(value)) {
+          return value.toString();
+        }
+        return value.toFixed(2);
+      }
+      
+      return String(value);
+    };
     
     return (
       <div className="overflow-x-auto">
@@ -114,9 +148,7 @@ export function DynamicChart({ data, chartType, visualization }: DynamicChartPro
               <tr key={idx} className="border-b hover:bg-muted/30">
                 {keys.map((key) => (
                   <td key={key} className="p-3">
-                    {typeof row[key] === 'number' 
-                      ? row[key].toLocaleString()
-                      : row[key]}
+                    {formatCellValue(key, row[key])}
                   </td>
                 ))}
               </tr>
@@ -126,6 +158,32 @@ export function DynamicChart({ data, chartType, visualization }: DynamicChartPro
       </div>
     );
   }
+
+  // Helper function to format values for tooltips and axes
+  const formatValue = (key: string, value: any): string => {
+    // Format salary columns with LPA suffix
+    const salaryKeys = ['salary', 'avg_salary', 'average_salary', 'min_salary', 'max_salary', 'total_salary'];
+    const lowerKey = key.toLowerCase();
+    
+    if (salaryKeys.some(sk => lowerKey.includes(sk))) {
+      if (typeof value === 'string' && (value.includes('LPA') || value.includes('Lakh'))) {
+        return value;
+      }
+      const num = typeof value === 'number' ? value : parseFloat(value);
+      if (!isNaN(num)) {
+        if (Number.isInteger(num)) {
+          return `${num} LPA`;
+        }
+        return `${num.toFixed(2)} LPA`;
+      }
+    }
+    
+    if (typeof value === 'number') {
+      return value.toLocaleString();
+    }
+    
+    return String(value);
+  };
 
   // Determine axes
   const keys = Object.keys(data[0] || {});
@@ -139,8 +197,8 @@ export function DynamicChart({ data, chartType, visualization }: DynamicChartPro
         <BarChart data={data}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey={xKey} />
-          <YAxis />
-          <Tooltip />
+          <YAxis tickFormatter={(value) => formatValue(yKey, value)} />
+          <Tooltip formatter={(value: any) => formatValue(yKey, value)} />
           <Legend />
           <Bar dataKey={yKey} fill="#3b82f6" />
         </BarChart>
@@ -155,8 +213,8 @@ export function DynamicChart({ data, chartType, visualization }: DynamicChartPro
         <LineChart data={data}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey={xKey} />
-          <YAxis />
-          <Tooltip />
+          <YAxis tickFormatter={(value) => formatValue(yKey, value)} />
+          <Tooltip formatter={(value: any) => formatValue(yKey, value)} />
           <Legend />
           <Line type="monotone" dataKey={yKey} stroke="#3b82f6" strokeWidth={2} />
         </LineChart>
@@ -182,7 +240,7 @@ export function DynamicChart({ data, chartType, visualization }: DynamicChartPro
               <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
             ))}
           </Pie>
-          <Tooltip />
+          <Tooltip formatter={(value: any) => formatValue(yKey, value)} />
           <Legend />
         </PieChart>
       </ResponsiveContainer>
@@ -204,7 +262,7 @@ export function DynamicChart({ data, chartType, visualization }: DynamicChartPro
             fill="#3b82f6"
             fillOpacity={0.6}
           />
-          <Tooltip />
+          <Tooltip formatter={(value: any) => formatValue(yKey, value)} />
         </RadarChart>
       </ResponsiveContainer>
     );
@@ -218,9 +276,9 @@ export function DynamicChart({ data, chartType, visualization }: DynamicChartPro
       <ResponsiveContainer width="100%" height={400}>
         <BarChart data={sortedData} layout="vertical">
           <CartesianGrid strokeDasharray="3 3" />
-          <XAxis type="number" />
+          <XAxis type="number" tickFormatter={(value) => formatValue(yKey, value)} />
           <YAxis dataKey={xKey} type="category" width={150} />
-          <Tooltip />
+          <Tooltip formatter={(value: any) => formatValue(yKey, value)} />
           <Legend />
           <Bar dataKey={yKey} fill="#3b82f6" />
         </BarChart>

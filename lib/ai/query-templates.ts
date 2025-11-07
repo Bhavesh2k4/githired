@@ -26,7 +26,7 @@ export const STUDENT_TEMPLATES: QueryTemplateDefinition[] = [
     category: "Market Insights",
     name: "Most in-demand skills",
     description: "Skills most frequently required in job postings",
-    prompt: "Analyze all active jobs and show the top 10 most frequently required skills with their count.",
+    prompt: "Analyze all active jobs and show the top 10 most frequently required skills with their count. Extract skills from the skills array using unnest(), count occurrences of each skill, group by skill, order by count descending, and limit to top 10. Return columns: skill (text) and count (integer).",
     chartType: "bar",
     sortOrder: 2
   },
@@ -56,7 +56,7 @@ export const STUDENT_TEMPLATES: QueryTemplateDefinition[] = [
     category: "Job Recommendations",
     name: "Best job matches for me",
     description: "Jobs that match your profile and eligibility",
-    prompt: "Find active jobs I'm eligible for based on my CGPA, degree, and course. Calculate match score based on my skills overlap with job requirements. Show top 10 matches with company name, job title, salary, and match percentage.",
+    prompt: "Find active jobs I'm eligible for based on my CGPA, degree, and course. Calculate match score based on my skills overlap with job requirements. Show top 10 matches with company name, job title, salary, and match percentage. IMPORTANT: When creating CTEs, if you SELECT 'id' from a table, use 'id' (or alias it as 'job_id' in the SELECT) when referencing it later. Don't use 'job_id' if the CTE only selected 'id' - either use 'id' or alias it in the SELECT clause.",
     chartType: "table",
     sortOrder: 5
   },
@@ -96,7 +96,7 @@ export const STUDENT_TEMPLATES: QueryTemplateDefinition[] = [
     category: "Profile Analysis",
     name: "CGPA vs peers in my course",
     description: "Compare your CGPA with others in your course",
-    prompt: "Compare my CGPA with other students in my course. Show distribution of CGPAs in my course, my percentile, and average CGPA.",
+    prompt: "Calculate my CGPA percentile in my course. Return a SINGLE ROW with: my CGPA, total students in my course, the average CGPA of my course (rounded to 2 decimals), and my percentile rank (0-100). Calculate percentile using PERCENT_RANK() window function over ALL students in my course ordered by CGPA, then multiply by 100 and round to 1 decimal. Use column names: my_cgpa, total_students, course_avg_cgpa, my_percentile.",
     chartType: "metric",
     sortOrder: 9
   },
@@ -106,7 +106,7 @@ export const STUDENT_TEMPLATES: QueryTemplateDefinition[] = [
     category: "Market Insights",
     name: "Skills I'm missing",
     description: "Find skills required in jobs that you don't have",
-    prompt: "Analyze active jobs I'm eligible for and identify the top 10 skills I don't have yet. Show skill name and how many jobs require it.",
+    prompt: "Analyze active jobs I'm eligible for (based on my course, degree, and CGPA) and identify the top 10 skills I don't have yet. Show skill name and how many jobs require it. When creating CTEs, ensure you SELECT all columns you will reference later (e.g., if you need course, degree, or cgpa for eligibility checks, include them in the CTE SELECT clause). For finding missing skills: expand job skills using unnest(), expand student skills using unnest(), then find skills that exist in job skills but NOT in student skills. Use proper array comparison: check if a single skill value is NOT IN the student's skills array, not comparing arrays directly.",
     chartType: "bar",
     sortOrder: 10
   }

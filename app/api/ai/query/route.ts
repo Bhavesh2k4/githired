@@ -14,8 +14,35 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await executeAIQuery(query, templateId);
+    
+    // If it's a quota error, return 429 status
+    if (!result.success && result.isQuotaError) {
+      return NextResponse.json(
+        { 
+          error: result.error,
+          isQuotaError: true,
+          retryAfter: result.retryAfter
+        },
+        { status: 429 }
+      );
+    }
+    
     return NextResponse.json(result);
   } catch (error: any) {
+    // Check if it's a quota error
+    if (error.isQuotaError || 
+        error.message?.includes("quota") || 
+        error.message?.includes("rate limit")) {
+      return NextResponse.json(
+        { 
+          error: error.message || "AI service quota exceeded. Please try again later.",
+          isQuotaError: true,
+          retryAfter: error.retryAfter
+        },
+        { status: 429 }
+      );
+    }
+    
     return NextResponse.json(
       { error: error.message || "Failed to execute query" },
       { status: 500 }
