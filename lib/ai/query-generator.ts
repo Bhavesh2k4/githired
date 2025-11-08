@@ -457,6 +457,34 @@ Format as markdown with bullet points. Keep it concise (max 200 words).`;
   }
 }
 
+export async function generateGeneralResponse(
+  query: string,
+  role: "student" | "company" | "admin"
+): Promise<string> {
+  const roleContext = role === "student"
+    ? "You are helping a student preparing for placements."
+    : role === "company"
+    ? "You are helping a recruiter or company representative."
+    : "You are assisting an administrator overseeing the entire platform.";
+
+  const prompt = `${roleContext}
+
+The user asked: "${query}"
+
+Provide a concise, friendly, and practical response (max 200 words). Use markdown bullet points if it improves readability.`;
+
+  try {
+    const response = await generateStructuredResponse<{ answer: string }>(
+      prompt,
+      '{"answer": string}'
+    );
+    return response.answer;
+  } catch (error) {
+    console.error("General response generation error:", error);
+    return "I’m here to help with your analytics and preparation questions. Try asking about your applications, skills, or opportunities on the platform.";
+  }
+}
+
 export async function generateSuggestions(
   role: "student" | "company" | "admin",
   recentQueries: string[]

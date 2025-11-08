@@ -8,8 +8,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DynamicChart } from "@/components/charts/dynamic-chart";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { Sparkles, Search, History, X, Download, Code2, Info } from "lucide-react";
+import { Sparkles, Search, History, Download, Code2, Info } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import { Card } from "@/components/ui/card";
 
 interface Template {
   id: string;
@@ -28,6 +29,7 @@ interface QueryResult {
   sql?: string;
   explanation?: string;
   executionTime?: string;
+  visualizationNote?: string;
 }
 
 export function AIAssistantModal() {
@@ -367,6 +369,13 @@ export function AIAssistantModal() {
                             <ReactMarkdown>{result.insights}</ReactMarkdown>
                           </div>
                         </div>
+                      )}
+
+                      {result.visualizationNote && (
+                        <Card className="p-4 border-dashed border-primary/40 bg-primary/5 dark:bg-primary/10">
+                          <h4 className="font-semibold mb-1 text-sm text-primary">Visualization unavailable</h4>
+                          <p className="text-sm text-muted-foreground">{result.visualizationNote}</p>
+                        </Card>
                       )}
 
                       {/* Chart */}

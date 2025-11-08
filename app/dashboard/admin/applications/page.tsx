@@ -34,13 +34,41 @@ export default function AdminApplicationsPage() {
 
   const getStatusBadge = (status: string) => {
     const badges: Record<string, { color: string; label: string }> = {
-      pending: { color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200", label: "Pending" },
-      reviewed: { color: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200", label: "Reviewed" },
-      shortlisted: { color: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200", label: "Shortlisted" },
-      rejected: { color: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200", label: "Rejected" },
+      pending: {
+        color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
+        label: "Pending",
+      },
+      reviewed: {
+        color: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+        label: "Reviewed",
+      },
+      shortlisted: {
+        color: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200",
+        label: "Shortlisted",
+      },
+      rejected: {
+        color: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+        label: "Rejected",
+      },
+      selected: {
+        color: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+        label: "Selected",
+      },
+      oa: {
+        color: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200",
+        label: "Online Assessment",
+      },
+      interview: {
+        color: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
+        label: "Interview",
+      },
     };
 
-    const badge = badges[status] || badges.pending;
+    const badge = badges[status] || {
+      color: "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200",
+      label: status.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
+    };
+
     return <span className={`text-xs px-2 py-1 rounded-full ${badge.color}`}>{badge.label}</span>;
   };
 
@@ -58,6 +86,8 @@ export default function AdminApplicationsPage() {
     pending: applications.filter((a) => a.application.status === "pending").length,
     reviewed: applications.filter((a) => a.application.status === "reviewed").length,
     shortlisted: applications.filter((a) => a.application.status === "shortlisted").length,
+    interview: applications.filter((a) => a.application.status === "interview").length,
+    selected: applications.filter((a) => a.application.status === "selected").length,
     rejected: applications.filter((a) => a.application.status === "rejected").length,
   };
 
@@ -84,7 +114,7 @@ export default function AdminApplicationsPage() {
       </div>
 
       {/* Statistics */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Total</CardTitle>
@@ -118,6 +148,24 @@ export default function AdminApplicationsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">{stats.shortlisted}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Interview</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-purple-600">{stats.interview}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Selected</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-emerald-600">{stats.selected}</div>
           </CardContent>
         </Card>
 

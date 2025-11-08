@@ -46,7 +46,7 @@ const COLORS = [
 export function DynamicChart({ data, chartType, visualization }: DynamicChartProps) {
   if (!data || data.length === 0) {
     return (
-      <Card className="p-8 text-center text-muted-foreground">
+      <Card className="p-8 text-center text-muted-foreground border-dashed border-primary/40 bg-primary/5 dark:bg-primary/10">
         No data available to visualize
       </Card>
     );
@@ -78,13 +78,13 @@ export function DynamicChart({ data, chartType, visualization }: DynamicChartPro
     };
     
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-8 w-full">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6 w-full">
         {keys.map((key) => (
-          <Card key={key} className="p-6 flex flex-col gap-3 min-w-0">
-            <div className="text-sm font-medium text-muted-foreground break-words">
+          <Card key={key} className="p-6 flex flex-col gap-3 min-w-0 shadow-sm border border-primary/10 bg-gradient-to-br from-white to-blue-50/60 dark:from-slate-900 dark:to-blue-900/30">
+            <div className="text-xs uppercase tracking-wide text-primary/70 dark:text-primary/80 font-semibold">
               {key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
             </div>
-            <div className="text-2xl font-bold tabular-nums">
+            <div className="text-3xl font-bold tabular-nums">
               {formatNumber(metrics[key])}
             </div>
           </Card>
@@ -132,30 +132,35 @@ export function DynamicChart({ data, chartType, visualization }: DynamicChartPro
     };
     
     return (
-      <div className="overflow-x-auto">
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="border-b bg-muted/50">
-              {keys.map((key) => (
-                <th key={key} className="text-left p-3 font-semibold">
-                  {key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {data.map((row, idx) => (
-              <tr key={idx} className="border-b hover:bg-muted/30">
+      <Card className="overflow-hidden border border-primary/10 shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-sm">
+            <thead>
+              <tr className="bg-muted/60 dark:bg-slate-900/60 text-muted-foreground uppercase text-xs tracking-wide">
                 {keys.map((key) => (
-                  <td key={key} className="p-3">
-                    {formatCellValue(key, row[key])}
-                  </td>
+                  <th key={key} className="text-left px-4 py-3 font-semibold whitespace-nowrap">
+                    {key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                  </th>
                 ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {data.map((row, idx) => (
+                <tr
+                  key={idx}
+                  className="border-t border-muted/40 odd:bg-muted/20 dark:odd:bg-slate-900/40 hover:bg-primary/5 transition-colors"
+                >
+                  {keys.map((key) => (
+                    <td key={key} className="px-4 py-3 whitespace-pre-line">
+                      {formatCellValue(key, row[key])}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
     );
   }
 
@@ -193,78 +198,94 @@ export function DynamicChart({ data, chartType, visualization }: DynamicChartPro
   // Bar Chart
   if (chartType === "bar") {
     return (
-      <ResponsiveContainer width="100%" height={400}>
-        <BarChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey={xKey} />
-          <YAxis tickFormatter={(value) => formatValue(yKey, value)} />
-          <Tooltip formatter={(value: any) => formatValue(yKey, value)} />
-          <Legend />
-          <Bar dataKey={yKey} fill="#3b82f6" />
-        </BarChart>
-      </ResponsiveContainer>
+      <Card className="p-6 shadow-sm border border-primary/10 bg-gradient-to-br from-white to-blue-50/60 dark:from-slate-950 dark:to-blue-950/20">
+        <div className="h-[400px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={data}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#c7d2fe" opacity={0.4} />
+              <XAxis dataKey={xKey} />
+              <YAxis tickFormatter={(value) => formatValue(yKey, value)} />
+              <Tooltip formatter={(value: any) => formatValue(yKey, value)} />
+              <Legend />
+              <Bar dataKey={yKey} fill="#3b82f6" radius={[6, 6, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </Card>
     );
   }
 
   // Line Chart
   if (chartType === "line") {
     return (
-      <ResponsiveContainer width="100%" height={400}>
-        <LineChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey={xKey} />
-          <YAxis tickFormatter={(value) => formatValue(yKey, value)} />
-          <Tooltip formatter={(value: any) => formatValue(yKey, value)} />
-          <Legend />
-          <Line type="monotone" dataKey={yKey} stroke="#3b82f6" strokeWidth={2} />
-        </LineChart>
-      </ResponsiveContainer>
+      <Card className="p-6 shadow-sm border border-primary/10 bg-gradient-to-br from-white to-purple-50/60 dark:from-slate-950 dark:to-purple-950/20">
+        <div className="h-[400px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={data}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#c4b5fd" opacity={0.4} />
+              <XAxis dataKey={xKey} />
+              <YAxis tickFormatter={(value) => formatValue(yKey, value)} />
+              <Tooltip formatter={(value: any) => formatValue(yKey, value)} />
+              <Legend />
+              <Line type="monotone" dataKey={yKey} stroke="#6366f1" strokeWidth={3} dot={{ r: 4 }} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </Card>
     );
   }
 
   // Pie Chart
   if (chartType === "pie") {
     return (
-      <ResponsiveContainer width="100%" height={400}>
-        <PieChart>
-          <Pie
-            data={data}
-            dataKey={yKey}
-            nameKey={xKey}
-            cx="50%"
-            cy="50%"
-            outerRadius={150}
-            label
-          >
-            {data.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-            ))}
-          </Pie>
-          <Tooltip formatter={(value: any) => formatValue(yKey, value)} />
-          <Legend />
-        </PieChart>
-      </ResponsiveContainer>
+      <Card className="p-6 shadow-sm border border-primary/10 bg-gradient-to-br from-white to-pink-50/60 dark:from-slate-950 dark:to-pink-950/20">
+        <div className="h-[400px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={data}
+                dataKey={yKey}
+                nameKey={xKey}
+                cx="50%"
+                cy="50%"
+                outerRadius={150}
+                label
+              >
+                {data.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip formatter={(value: any) => formatValue(yKey, value)} />
+              <Legend />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+      </Card>
     );
   }
 
   // Radar Chart
   if (chartType === "radar") {
     return (
-      <ResponsiveContainer width="100%" height={400}>
-        <RadarChart data={data}>
-          <PolarGrid />
-          <PolarAngleAxis dataKey={xKey} />
-          <PolarRadiusAxis />
-          <Radar
-            name="Score"
-            dataKey={yKey}
-            stroke="#3b82f6"
-            fill="#3b82f6"
-            fillOpacity={0.6}
-          />
-          <Tooltip formatter={(value: any) => formatValue(yKey, value)} />
-        </RadarChart>
-      </ResponsiveContainer>
+      <Card className="p-6 shadow-sm border border-primary/10 bg-gradient-to-br from-white to-teal-50/60 dark:from-slate-950 dark:to-teal-950/20">
+        <div className="h-[400px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <RadarChart data={data}>
+              <PolarGrid stroke="#99f6e4" opacity={0.4} />
+              <PolarAngleAxis dataKey={xKey} />
+              <PolarRadiusAxis />
+              <Radar
+                name="Score"
+                dataKey={yKey}
+                stroke="#0ea5e9"
+                fill="#0ea5e9"
+                fillOpacity={0.5}
+              />
+              <Tooltip formatter={(value: any) => formatValue(yKey, value)} />
+            </RadarChart>
+          </ResponsiveContainer>
+        </div>
+      </Card>
     );
   }
 
@@ -273,16 +294,20 @@ export function DynamicChart({ data, chartType, visualization }: DynamicChartPro
     const sortedData = [...data].reverse(); // Reverse for funnel effect
     
     return (
-      <ResponsiveContainer width="100%" height={400}>
-        <BarChart data={sortedData} layout="vertical">
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis type="number" tickFormatter={(value) => formatValue(yKey, value)} />
-          <YAxis dataKey={xKey} type="category" width={150} />
-          <Tooltip formatter={(value: any) => formatValue(yKey, value)} />
-          <Legend />
-          <Bar dataKey={yKey} fill="#3b82f6" />
-        </BarChart>
-      </ResponsiveContainer>
+      <Card className="p-6 shadow-sm border border-primary/10 bg-gradient-to-br from-white to-amber-50/60 dark:from-slate-950 dark:to-amber-950/20">
+        <div className="h-[400px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={sortedData} layout="vertical">
+              <CartesianGrid strokeDasharray="3 3" stroke="#fcd34d" opacity={0.4} />
+              <XAxis type="number" tickFormatter={(value) => formatValue(yKey, value)} />
+              <YAxis dataKey={xKey} type="category" width={150} />
+              <Tooltip formatter={(value: any) => formatValue(yKey, value)} />
+              <Legend />
+              <Bar dataKey={yKey} fill="#f59e0b" radius={[0, 6, 6, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </Card>
     );
   }
 

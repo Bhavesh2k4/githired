@@ -5,8 +5,8 @@ import { headers } from "next/headers";
 import { db } from "@/db/drizzle";
 import { aiQueries, students, companies, user } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { convertQueryToSQL, generateInsights } from "@/lib/ai/query-generator";
-import { validateSQL, sanitizeSQL, addRoleBasedFilters, SQLValidationError } from "@/lib/ai/sql-validator";
+import { convertQueryToSQL, generateInsights, generateGeneralResponse } from "@/lib/ai/query-generator";
+import { validateSQL, sanitizeSQL, addRoleBasedFilters, SQLValidationError, ROLE_PERMISSIONS } from "@/lib/ai/sql-validator";
 import { getTemplateById } from "@/lib/ai/query-templates";
 import { sql as drizzleSql } from "drizzle-orm";
 
@@ -23,6 +23,7 @@ interface QueryExecutionResult {
   executionTime?: string; // Add execution time
   isQuotaError?: boolean; // Indicates if error is due to quota/rate limit
   retryAfter?: string | null; // Suggested retry time
+  visualizationNote?: string; // Message when visualization isn't available
 }
 
 const RECOVERABLE_SQL_ERROR_CODES = new Set([
@@ -179,6 +180,19 @@ Try asking me something like:
 Or click on a template to get started!`;
 }
 
+function doesSQLReferenceDataTables(sql: string, role: string): boolean {
+  const permissions = ROLE_PERMISSIONS[role];
+  if (!permissions) return false;
+
+  const lowerSql = sql.toLowerCase();
+  return Object.keys(permissions)
+    .filter((table) => permissions[table].allowed)
+    .some((table) => {
+      const pattern = new RegExp(`\\b(from|join)\\s+${table}\\b`, "i");
+      return pattern.test(lowerSql);
+    });
+}
+
 export async function executeAIQuery(
   naturalQuery: string,
   templateId?: string
@@ -188,15 +202,16 @@ export async function executeAIQuery(
     const context = await getAuthContext();
 
     // Handle non-data queries (greetings, help, etc.) - skip if using template
-    if (!templateId && isNonDataQuery(naturalQuery)) {
+  if (!templateId && isNonDataQuery(naturalQuery)) {
       const friendlyMessage = generateFriendlyResponse(naturalQuery, context.role);
       return {
         success: true,
         data: [],
         insights: friendlyMessage,
-        chartType: "table",
-        visualization: {},
-        explanation: "Friendly greeting response"
+        chartType: undefined,
+        visualization: undefined,
+        explanation: "Friendly greeting response",
+        visualizationNote: "Visualization is not available for this type of question."
       };
     }
 
@@ -250,6 +265,21 @@ export async function executeAIQuery(
       visualization = queryResponse.visualization;
       sqlQuery = sanitizeSQL(queryResponse.sql);
 
+      const referencesDataTables = doesSQLReferenceDataTables(sqlQuery, context.role);
+
+      if (!templateId && !referencesDataTables) {
+        const generalAnswer = await generateGeneralResponse(naturalQuery, context.role);
+        return {
+          success: true,
+          data: [],
+          insights: generalAnswer,
+          chartType: undefined,
+          visualization: undefined,
+          explanation: "General guidance response",
+          visualizationNote: "Visualization is not available for this type of question."
+        };
+      }
+
       validateSQL(sqlQuery, context.role);
 
       sqlQuery = addRoleBasedFilters(sqlQuery, context.role, queryContext);
@@ -294,7 +324,8 @@ export async function executeAIQuery(
           queryId: savedQuery.id,
           sql: sqlQuery,
           explanation,
-          executionTime
+          executionTime,
+          visualizationNote: rows.length > 0 ? undefined : "Visualization is not available for this query."
         };
       } catch (executionError: any) {
         console.error("Query execution error:", executionError);
