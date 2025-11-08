@@ -32,7 +32,8 @@ const RECOVERABLE_SQL_ERROR_CODES = new Set([
   "42803", // grouping_error
   "42883", // undefined_function
   "42P02", // undefined_parameter
-  "42P07"  // duplicate_table
+  "42P07", // duplicate_table
+  "21000"  // cardinality_violation (subquery returned more than one row)
 ]);
 
 function extractErrorCode(error: any): string | undefined {
@@ -65,7 +66,8 @@ function isRecoverableDatabaseError(error: any): boolean {
     message.includes("does not exist") ||
     message.includes("undefined column") ||
     message.includes("undefined table") ||
-    message.includes("undefined function")
+    message.includes("undefined function") ||
+    message.includes("more than one row returned")
   );
 }
 

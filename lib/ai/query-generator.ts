@@ -330,6 +330,13 @@ REQUIREMENTS:
         (SELECT percentile FROM PercentileData WHERE id = 'current_student_id') AS my_percentile
     - This ensures the student's percentile (calculated over ALL students) appears correctly in all distribution rows
     - The percentile value should be the same in every row since it represents the student's position in the overall distribution
+    - CRITICAL SUBQUERY ERROR FIX: When a CTE calculates percentiles/rankings for ALL rows, you MUST include the id column:
+      ❌ WRONG: WITH CGPAPercentile AS (SELECT ROUND(...percentile...) AS cgpa_percentile FROM students)
+                SELECT (SELECT cgpa_percentile FROM CGPAPercentile) ... -- ERROR: multiple rows returned
+      ✅ CORRECT: WITH CGPAPercentile AS (SELECT id, ROUND(...percentile...) AS cgpa_percentile FROM students)
+                  SELECT (SELECT cgpa_percentile FROM CGPAPercentile WHERE id = 'student_id') ... -- OK: filtered to one row
+      - Always add "WHERE id = 'specific_id'" when selecting from a multi-row CTE in a scalar subquery context
+      - If you see "more than one row returned by a subquery", add the id column to the CTE and filter by it
 
 OUTPUT FORMAT: Return ONLY a valid JSON object with these exact fields:
 - sql: (string) The PostgreSQL SELECT query
