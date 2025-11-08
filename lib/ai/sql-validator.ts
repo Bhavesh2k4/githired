@@ -717,6 +717,11 @@ export function addRoleBasedFilters(
     const tablePerms = permissions[tableName];
     if (!tablePerms || !tablePerms.conditions) return sqlPart;
 
+    const sqlKeywordSet = new Set([
+      'where', 'group', 'order', 'having', 'limit', 'join', 'inner', 'left',
+      'right', 'full', 'cross', 'outer', 'on', 'using'
+    ]);
+
     // Check if table is actually in the FROM clause at this query level
     if (!isTableInFromClause(sqlPart, tableName)) {
       return sqlPart; // Table not in FROM clause at this level
@@ -741,8 +746,10 @@ export function addRoleBasedFilters(
     const aliasMatch = sqlPart.match(new RegExp(`\\bFROM\\s+${tableName}\\s+(\\w+)\\b`, 'i'));
     if (aliasMatch && aliasMatch[1]) {
       const alias = aliasMatch[1];
-      // Replace table name with alias in condition
-      condition = condition.replace(new RegExp(`\\b${tableName}\\.`, 'g'), `${alias}.`);
+      if (!sqlKeywordSet.has(alias.toLowerCase())) {
+        // Replace table name with alias in condition
+        condition = condition.replace(new RegExp(`\\b${tableName}\\.`, 'g'), `${alias}.`);
+      }
     }
     
     let modified = sqlPart;
