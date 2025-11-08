@@ -126,7 +126,6 @@ export function ScheduleInterviewModal({
               <option value="round_1">Technical Round 1</option>
               <option value="round_2">Technical Round 2</option>
               <option value="round_3">Technical Round 3</option>
-              <option value="hr">HR Round</option>
             </select>
           </div>
 

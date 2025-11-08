@@ -125,7 +125,7 @@ export async function getCompanyInterviews(jobId?: string) {
 export async function scheduleInterview(data: {
   applicationId: string;
   round: string;
-  scheduledAt: Date;
+  scheduledAt: Date | string;
   duration?: string;
   location?: string;
   meetingLink?: string;
@@ -154,13 +154,18 @@ export async function scheduleInterview(data: {
     throw new Error("Application not found or unauthorized");
   }
 
+  // Convert scheduledAt to Date if it's a string
+  const scheduledAtDate = typeof data.scheduledAt === 'string' 
+    ? new Date(data.scheduledAt) 
+    : data.scheduledAt;
+
   // Create interview
   const [interview] = await db
     .insert(interviews)
     .values({
       applicationId: data.applicationId,
       round: data.round,
-      scheduledAt: data.scheduledAt,
+      scheduledAt: scheduledAtDate,
       duration: data.duration,
       location: data.location,
       meetingLink: data.meetingLink,
@@ -171,11 +176,25 @@ export async function scheduleInterview(data: {
     .returning();
 
   // Update application status based on round
-  let newStatus = "pending";
-  if (data.round === "oa") newStatus = "oa";
-  else if (data.round === "round_1") newStatus = "interview_round_1";
-  else if (data.round === "round_2") newStatus = "interview_round_2";
-  else if (data.round === "round_3") newStatus = "interview_round_3";
+  let newStatus: string;
+  
+  switch (data.round) {
+    case "oa":
+      newStatus = "oa";
+      break;
+    case "round_1":
+      newStatus = "interview_round_1";
+      break;
+    case "round_2":
+      newStatus = "interview_round_2";
+      break;
+    case "round_3":
+      newStatus = "interview_round_3";
+      break;
+    default:
+      console.error(`Invalid interview round: ${data.round}`);
+      throw new Error(`Invalid interview round: ${data.round}. Valid options are: oa, round_1, round_2, round_3`);
+  }
 
   await db
     .update(applications)

@@ -7,8 +7,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useRouter, useParams } from "next/navigation";
-import { Loader2, ArrowLeft } from "lucide-react";
+import { Loader2, ArrowLeft, X } from "lucide-react";
 import Link from "next/link";
+
+const COMMON_SKILLS = [
+  "JavaScript", "Python", "Java", "C++", "React", "Node.js", "TypeScript",
+  "SQL", "MongoDB", "AWS", "Docker", "Git", "Machine Learning", "Data Science",
+  "UI/UX", "Project Management", "Communication", "Problem Solving"
+];
 
 export default function EditJobPage() {
   const router = useRouter();
@@ -17,6 +23,8 @@ export default function EditJobPage() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [skillInput, setSkillInput] = useState("");
+  const [benefitInput, setBenefitInput] = useState("");
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -90,6 +98,52 @@ export default function EditJobPage() {
         eligibleDegrees: [...formData.eligibleDegrees, degree],
       });
     }
+  };
+
+  const handleSkillToggle = (skill: string) => {
+    if (formData.skills.includes(skill)) {
+      setFormData({
+        ...formData,
+        skills: formData.skills.filter((s) => s !== skill),
+      });
+    } else {
+      setFormData({
+        ...formData,
+        skills: [...formData.skills, skill],
+      });
+    }
+  };
+
+  const handleAddCustomSkill = (customSkill: string) => {
+    if (customSkill.trim() && !formData.skills.includes(customSkill.trim())) {
+      setFormData({
+        ...formData,
+        skills: [...formData.skills, customSkill.trim()],
+      });
+    }
+  };
+
+  const handleRemoveSkill = (skill: string) => {
+    setFormData({
+      ...formData,
+      skills: formData.skills.filter((s) => s !== skill),
+    });
+  };
+
+  const handleAddBenefit = (benefit: string) => {
+    if (benefit.trim() && !formData.benefits.includes(benefit.trim())) {
+      setFormData({
+        ...formData,
+        benefits: [...formData.benefits, benefit.trim()],
+      });
+    }
+  };
+
+  const handleRemoveBenefit = (benefit: string) => {
+    setFormData({
+      ...formData,
+      benefits: formData.benefits.filter((b) => b !== benefit),
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -265,6 +319,142 @@ export default function EditJobPage() {
                 ))}
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Required Skills</CardTitle>
+            <CardDescription>Select common skills or add custom ones</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label>Common Skills</Label>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {COMMON_SKILLS.map((skill) => (
+                  <button
+                    key={skill}
+                    type="button"
+                    onClick={() => handleSkillToggle(skill)}
+                    className={`px-3 py-1 rounded-full text-sm border ${
+                      formData.skills.includes(skill)
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-background hover:bg-accent"
+                    }`}
+                  >
+                    {skill}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <Label>Add Custom Skill</Label>
+              <div className="flex gap-2 mt-2">
+                <Input
+                  placeholder="e.g., Figma, Kubernetes..."
+                  value={skillInput}
+                  onChange={(e) => setSkillInput(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddCustomSkill(skillInput);
+                      setSkillInput("");
+                    }
+                  }}
+                />
+                <Button
+                  type="button"
+                  onClick={() => {
+                    handleAddCustomSkill(skillInput);
+                    setSkillInput("");
+                  }}
+                >
+                  Add
+                </Button>
+              </div>
+            </div>
+
+            {formData.skills.length > 0 && (
+              <div>
+                <Label>Selected Skills ({formData.skills.length})</Label>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {formData.skills.map((skill) => (
+                    <span
+                      key={skill}
+                      className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm bg-primary/10 text-primary"
+                    >
+                      {skill}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveSkill(skill)}
+                        className="hover:text-destructive"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Benefits & Perks</CardTitle>
+            <CardDescription>Add benefits and perks offered with this position</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label>Add Benefit</Label>
+              <div className="flex gap-2 mt-2">
+                <Input
+                  placeholder="e.g., Health Insurance, Remote Work..."
+                  value={benefitInput}
+                  onChange={(e) => setBenefitInput(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddBenefit(benefitInput);
+                      setBenefitInput("");
+                    }
+                  }}
+                />
+                <Button
+                  type="button"
+                  onClick={() => {
+                    handleAddBenefit(benefitInput);
+                    setBenefitInput("");
+                  }}
+                >
+                  Add
+                </Button>
+              </div>
+            </div>
+
+            {formData.benefits.length > 0 && (
+              <div>
+                <Label>Benefits ({formData.benefits.length})</Label>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {formData.benefits.map((benefit) => (
+                    <span
+                      key={benefit}
+                      className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm bg-secondary"
+                    >
+                      {benefit}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveBenefit(benefit)}
+                        className="hover:text-destructive"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 

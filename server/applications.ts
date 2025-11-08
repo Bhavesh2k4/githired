@@ -218,6 +218,16 @@ export async function getJobApplications(jobId: string) {
       const studentSkills = app.student.skills || [];
       let skillsMatch = 0;
       
+      // Debug logging to check skills data
+      console.log('Skills Match Debug:', {
+        jobId: jobId,
+        studentId: app.student.id,
+        jobSkills: jobSkills,
+        studentSkills: studentSkills,
+        jobSkillsLength: jobSkills.length,
+        studentSkillsLength: studentSkills.length
+      });
+      
       if (jobSkills.length > 0 && studentSkills.length > 0) {
         // Normalize skills for better matching
         const normalizeSkill = (skill: string) => 
@@ -240,6 +250,9 @@ export async function getJobApplications(jobId: string) {
         });
         
         skillsMatch = (matchingSkills.length / jobSkills.length) * 100;
+        console.log('Skills match calculated:', skillsMatch, 'Matching skills:', matchingSkills.length);
+      } else {
+        console.log('Skills match is 0% - missing skills data');
       }
 
       return {
