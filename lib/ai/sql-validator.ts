@@ -835,6 +835,15 @@ export function addRoleBasedFilters(
         cteBlocks.push(currentBlock);
       }
       
+      // Extract CTE names to avoid treating them as base tables
+      const cteNames = new Set<string>();
+      cteBlocks.forEach(block => {
+        const cteNameMatch = block.match(/^[\s,]*(\w+)\s+AS\s*\(/i);
+        if (cteNameMatch && cteNameMatch[1]) {
+          cteNames.add(cteNameMatch[1].toLowerCase());
+        }
+      });
+      
       // Process each CTE block
       const processedCTEs = cteBlocks.map(block => {
         let processed = block;
@@ -860,12 +869,13 @@ export function addRoleBasedFilters(
           // Check if it's a function call
           const refPattern = new RegExp(`(?:FROM|JOIN)\\s+${ref}\\s*\\(`, 'i');
           if (refPattern.test(block)) return false;
+          // Skip if it's a CTE name (not a base table)
+          if (cteNames.has(ref.toLowerCase())) return false;
           return !PG_FUNCTIONS.has(ref);
         }))];
         
-        // Apply filters for each table in this CTE
+        // Apply filters for each table in this CTE (only base tables, not CTEs)
         for (const table of tables) {
-          // Skip CTE references (they typically have uppercase or mixed case in SQL)
           if (permissions[table]) {
             processed = addFilterToTableQuery(processed, table, alreadyFiltered);
           }
@@ -885,6 +895,8 @@ export function addRoleBasedFilters(
         // Check if it's a function call
         const refPattern = new RegExp(`(?:FROM|JOIN)\\s+${ref}\\s*\\(`, 'i');
         if (refPattern.test(mainQuery)) return false;
+        // Skip if it's a CTE name (not a base table)
+        if (cteNames.has(ref.toLowerCase())) return false;
         return !PG_FUNCTIONS.has(ref);
       }))];
       
