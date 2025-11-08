@@ -113,6 +113,72 @@ async function getAuthContext() {
   };
 }
 
+// Helper function to detect non-data queries
+function isNonDataQuery(query: string): boolean {
+  const lowerQuery = query.toLowerCase().trim();
+  
+  // Greetings
+  const greetings = ['hi', 'hello', 'hey', 'good morning', 'good afternoon', 'good evening', 'greetings'];
+  if (greetings.some(g => lowerQuery === g || lowerQuery.startsWith(g + ' ') || lowerQuery.startsWith(g + '!'))) {
+    return true;
+  }
+  
+  // Help requests
+  const helpPatterns = ['help', 'what can you do', 'what can i ask', 'how does this work', 'show me examples'];
+  if (helpPatterns.some(p => lowerQuery.includes(p))) {
+    return true;
+  }
+  
+  // Very short queries that aren't meaningful
+  if (lowerQuery.length < 3) {
+    return true;
+  }
+  
+  return false;
+}
+
+// Helper function to generate friendly response for non-data queries
+function generateFriendlyResponse(query: string, role: string): string {
+  const lowerQuery = query.toLowerCase().trim();
+  
+  if (lowerQuery.includes('help') || lowerQuery.includes('what can you do') || lowerQuery.includes('what can i ask')) {
+    if (role === 'student') {
+      return `I can help you analyze your job application data! Here are some things you can ask me:
+
+- "Show me my profile score breakdown"
+- "What's my CGPA percentile?"
+- "Which skills are most in demand?"
+- "Show me my application status distribution"
+- "What jobs match my skills?"
+- "Compare my profile with peer averages"
+
+Try asking a question about your applications, skills, or profile!`;
+    } else if (role === 'company') {
+      return `I can help you analyze your recruitment data! Here are some things you can ask me:
+
+- "Show me application trends over time"
+- "Which skills are applicants missing?"
+- "What's the average CGPA of applicants?"
+- "Show me job posting performance"
+- "How many applications per job?"
+
+Try asking a question about your jobs or applicants!`;
+    } else {
+      return `I can help you analyze platform data! Try asking about students, companies, jobs, or applications.`;
+    }
+  }
+  
+  // Default friendly greeting
+  return `Hello! 👋 I'm your AI Analytics Assistant. I can help you explore your data with natural language queries.
+
+Try asking me something like:
+- "Show me my profile score"
+- "What skills are most in demand?"
+- "How am I performing compared to others?"
+
+Or click on a template to get started!`;
+}
+
 export async function executeAIQuery(
   naturalQuery: string,
   templateId?: string
@@ -120,6 +186,19 @@ export async function executeAIQuery(
   try {
     const startTime = Date.now();
     const context = await getAuthContext();
+
+    // Handle non-data queries (greetings, help, etc.) - skip if using template
+    if (!templateId && isNonDataQuery(naturalQuery)) {
+      const friendlyMessage = generateFriendlyResponse(naturalQuery, context.role);
+      return {
+        success: true,
+        data: [],
+        insights: friendlyMessage,
+        chartType: "table",
+        visualization: {},
+        explanation: "Friendly greeting response"
+      };
+    }
 
     let sqlQuery = "";
     let explanation = "";
