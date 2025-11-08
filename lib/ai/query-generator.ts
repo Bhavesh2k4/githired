@@ -189,11 +189,21 @@ IMPORTANT NOTES AND EXAMPLES:
 6. Use PostgreSQL syntax (ILIKE for case-insensitive search, || for concatenation)
 `;
 
-function buildPrompt(naturalQuery: string, role: string, context: {
-  userId?: string;
-  studentId?: string;
-  companyId?: string;
-}): string {
+interface QueryGenerationOptions {
+  previousSQL?: string;
+  errorMessage?: string;
+}
+
+function buildPrompt(
+  naturalQuery: string,
+  role: string,
+  context: {
+    userId?: string;
+    studentId?: string;
+    companyId?: string;
+  },
+  options: QueryGenerationOptions = {}
+): string {
   const permissions = ROLE_PERMISSIONS[role];
   
   if (!permissions) {
@@ -202,7 +212,7 @@ function buildPrompt(naturalQuery: string, role: string, context: {
   
   const allowedTables = Object.keys(permissions).filter(t => permissions[t].allowed);
 
-  return `You are a PostgreSQL SQL expert. Convert the following natural language query to a valid PostgreSQL SELECT query.
+  let prompt = `You are a PostgreSQL SQL expert. Convert the following natural language query to a valid PostgreSQL SELECT query.
 
 ================================================================================
 DATABASE SCHEMA - USE THIS EXACT STRUCTURE FOR ALL QUERIES
@@ -326,11 +336,24 @@ OUTPUT FORMAT: Return ONLY a valid JSON object with these exact fields:
 - explanation: (string) Plain English explanation
 - chartType: (string) One of: bar, line, pie, radar, table, metric, funnel
 - visualization: (object) Optional fields: xAxis, yAxis, groupBy
-
 Example response:
 {"sql":"SELECT COUNT(*) FROM students","explanation":"Counts total students","chartType":"metric","visualization":{}}
 
 CRITICAL: Respond with ONLY the JSON object, no markdown, no explanations, no code blocks.`;
+
+  if (options.previousSQL && options.errorMessage) {
+    prompt += `
+
+PREVIOUS ATTEMPT (FIX REQUIRED):
+- The last SQL attempt was:
+${options.previousSQL}
+- PostgreSQL returned this error:
+${options.errorMessage}
+
+You MUST correct the SQL so it avoids this error while still satisfying all requirements above. Return a brand new, corrected SQL query and respond using the same JSON format described earlier.`;
+  }
+
+  return prompt;
 }
 
 export async function convertQueryToSQL(
@@ -340,13 +363,14 @@ export async function convertQueryToSQL(
     userId?: string;
     studentId?: string;
     companyId?: string;
-  }
+  },
+  options: QueryGenerationOptions = {}
 ): Promise<QueryResponse> {
   if (!naturalQuery || naturalQuery.trim().length === 0) {
     throw new Error("Query cannot be empty");
   }
 
-  const prompt = buildPrompt(naturalQuery, role, context);
+  const prompt = buildPrompt(naturalQuery, role, context, options);
   
   const schema = `{
     "sql": string,

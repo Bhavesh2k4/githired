@@ -25,6 +25,50 @@ interface QueryExecutionResult {
   retryAfter?: string | null; // Suggested retry time
 }
 
+const RECOVERABLE_SQL_ERROR_CODES = new Set([
+  "42601", // syntax_error
+  "42703", // undefined_column
+  "42P01", // undefined_table
+  "42803", // grouping_error
+  "42883", // undefined_function
+  "42P02", // undefined_parameter
+  "42P07"  // duplicate_table
+]);
+
+function extractErrorCode(error: any): string | undefined {
+  if (!error) return undefined;
+  if (typeof error.code === "string") return error.code;
+  if (error.cause && typeof error.cause.code === "string") {
+    return error.cause.code;
+  }
+  return undefined;
+}
+
+function extractErrorMessage(error: any): string {
+  if (!error) return "Unknown error";
+  if (typeof error === "string") return error;
+  if (error.message) return error.message;
+  if (error.cause?.message) return error.cause.message;
+  return JSON.stringify(error);
+}
+
+function isRecoverableDatabaseError(error: any): boolean {
+  const code = extractErrorCode(error);
+  if (code && RECOVERABLE_SQL_ERROR_CODES.has(code)) {
+    return true;
+  }
+
+  const message = extractErrorMessage(error).toLowerCase();
+  return (
+    message.includes("syntax error") ||
+    message.includes("must appear in the group by") ||
+    message.includes("does not exist") ||
+    message.includes("undefined column") ||
+    message.includes("undefined table") ||
+    message.includes("undefined function")
+  );
+}
+
 async function getAuthContext() {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user) {
@@ -73,11 +117,14 @@ export async function executeAIQuery(
     const startTime = Date.now();
     const context = await getAuthContext();
 
-    let sqlQuery: string;
-    let explanation: string;
+    let sqlQuery = "";
+    let explanation = "";
     let chartType: "bar" | "line" | "pie" | "radar" | "table" | "metric" | "funnel";
     let visualization: any;
     let isTemplate = false;
+    let fixedChartType: typeof chartType | undefined;
+    let queryPrompt = naturalQuery;
+    let queryResponse: Awaited<ReturnType<typeof convertQueryToSQL>>;
 
     // Check if using a template
     if (templateId) {
@@ -91,86 +138,110 @@ export async function executeAIQuery(
       }
 
       isTemplate = true;
-      
-      // Generate SQL from template prompt
-      const queryResponse = await convertQueryToSQL(
-        template.prompt,
+      fixedChartType = template.chartType;
+      queryPrompt = template.prompt;
+      queryResponse = await convertQueryToSQL(
+        queryPrompt,
         context.role,
         context
       );
-
-      sqlQuery = queryResponse.sql;
-      explanation = queryResponse.explanation;
-      chartType = template.chartType;
-      visualization = queryResponse.visualization;
     } else {
-      // Free-form natural language query
-      const queryResponse = await convertQueryToSQL(
+      queryResponse = await convertQueryToSQL(
         naturalQuery,
         context.role,
         context
       );
-
-      sqlQuery = queryResponse.sql;
-      explanation = queryResponse.explanation;
-      chartType = queryResponse.chartType;
-      visualization = queryResponse.visualization;
     }
 
-    // Sanitize SQL
-    sqlQuery = sanitizeSQL(sqlQuery);
-
-    // Validate SQL
-    validateSQL(sqlQuery, context.role);
-
-    // Add role-based filters
-    sqlQuery = addRoleBasedFilters(sqlQuery, context.role, {
+    const queryContext = {
       userId: context.userId,
       studentId: context.studentId,
       companyId: context.companyId
-    });
-
-    console.log("Executing SQL:", sqlQuery);
-
-    // Execute query with timeout
-    const queryPromise = db.execute(drizzleSql.raw(sqlQuery));
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error("Query timeout")), 10000)
-    );
-
-    const result = await Promise.race([queryPromise, timeoutPromise]) as any;
-    const rows = result.rows || result;
-
-    const endTime = Date.now();
-    const executionTime = `${endTime - startTime}ms`;
-
-    // Generate insights
-    const insights = await generateInsights(naturalQuery, rows, chartType);
-
-    // Save query to history
-    const [savedQuery] = await db.insert(aiQueries).values({
-      userId: context.userId,
-      role: context.role,
-      query: naturalQuery,
-      generatedSql: sqlQuery,
-      results: rows,
-      insights,
-      chartType,
-      isTemplate,
-      executionTime
-    }).returning();
-
-    return {
-      success: true,
-      data: rows,
-      insights,
-      chartType,
-      visualization,
-      queryId: savedQuery.id,
-      sql: sqlQuery,
-      explanation,
-      executionTime
     };
+
+    const maxAttempts = 2;
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      explanation = queryResponse.explanation;
+      chartType = fixedChartType ?? queryResponse.chartType;
+      visualization = queryResponse.visualization;
+      sqlQuery = sanitizeSQL(queryResponse.sql);
+
+      validateSQL(sqlQuery, context.role);
+
+      sqlQuery = addRoleBasedFilters(sqlQuery, context.role, queryContext);
+
+      console.log("Executing SQL:", sqlQuery);
+
+      // Execute query with timeout
+      const queryPromise = db.execute(drizzleSql.raw(sqlQuery));
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Query timeout")), 10000)
+      );
+
+      try {
+        const result = await Promise.race([queryPromise, timeoutPromise]) as any;
+        const rows = result.rows || result;
+
+        const endTime = Date.now();
+        const executionTime = `${endTime - startTime}ms`;
+
+        // Generate insights
+        const insights = await generateInsights(naturalQuery, rows, chartType);
+
+        // Save query to history
+        const [savedQuery] = await db.insert(aiQueries).values({
+          userId: context.userId,
+          role: context.role,
+          query: naturalQuery,
+          generatedSql: sqlQuery,
+          results: rows,
+          insights,
+          chartType,
+          isTemplate,
+          executionTime
+        }).returning();
+
+        return {
+          success: true,
+          data: rows,
+          insights,
+          chartType,
+          visualization,
+          queryId: savedQuery.id,
+          sql: sqlQuery,
+          explanation,
+          executionTime
+        };
+      } catch (executionError: any) {
+        console.error("Query execution error:", executionError);
+
+        if (
+          attempt < maxAttempts - 1 &&
+          isRecoverableDatabaseError(executionError)
+        ) {
+          const errorMessage = extractErrorMessage(executionError);
+          console.warn(
+            "AI-generated SQL failed, requesting corrected query from LLM..."
+          );
+
+          queryResponse = await convertQueryToSQL(
+            queryPrompt,
+            context.role,
+            context,
+            {
+              previousSQL: sqlQuery,
+              errorMessage
+            }
+          );
+
+          // Retry loop
+          continue;
+        }
+
+        throw executionError;
+      }
+    }
 
   } catch (error: any) {
     console.error("Query execution error:", error);
