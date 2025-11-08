@@ -284,6 +284,14 @@ REQUIREMENTS:
     - Example: CASE WHEN divisor > 0 THEN numerator / divisor ELSE 0 END
     - Example: numerator / NULLIF(divisor, 0) - this returns NULL instead of error
     - When calculating percentages or ratios, always wrap division in CASE statements that check for zero/NULL
+    - CRITICAL ERROR TO FIX: If you see "division by zero", you MUST protect the DENOMINATOR:
+      ❌ WRONG: CASE WHEN numerator IS NULL THEN 0 ELSE ROUND((numerator / denominator) * 100) END
+                -- checks numerator but denominator could be NULL or 0!
+      ✅ CORRECT: CASE WHEN numerator IS NULL OR denominator IS NULL OR denominator = 0 THEN 0 
+                      ELSE ROUND((numerator / NULLIF(denominator, 0)) * 100) END
+      ✅ CORRECT: CASE WHEN numerator IS NULL THEN 0 
+                      ELSE ROUND((numerator / COALESCE(NULLIF(denominator, 0), 1)) * 100) END
+      - Always check BOTH numerator AND denominator before dividing!
 16. CRITICAL: Percentile calculations (PERCENT_RANK, PERCENTILE_CONT, etc.):
     - PERCENT_RANK() is a WINDOW FUNCTION, NOT an aggregate function
     - CORRECT syntax: PERCENT_RANK() OVER (ORDER BY column)
