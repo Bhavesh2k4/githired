@@ -13,8 +13,39 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "./ui/sidebar";
-import { ChevronRight, File } from "lucide-react";
+import { 
+  ChevronRight, 
+  LayoutDashboard, 
+  User, 
+  Briefcase, 
+  FileText, 
+  Calendar, 
+  KanbanSquare, 
+  TrendingUp, 
+  Users,
+  Building2,
+  ClipboardList
+} from "lucide-react";
 import { useQueryState } from "nuqs";
+
+// Map menu titles to their corresponding icons
+const getIconForTitle = (title: string) => {
+  const iconMap: Record<string, React.ReactNode> = {
+    "Dashboard": <LayoutDashboard />,
+    "Profile": <User />,
+    "Jobs": <Briefcase />,
+    "Applications": <FileText />,
+    "Interview Calendar": <Calendar />,
+    "Kanban Board": <KanbanSquare />,
+    "Profile Insights": <TrendingUp />,
+    "Peer Comparison": <Users />,
+    "Students": <Users />,
+    "Companies": <Building2 />,
+    "Admin": <ClipboardList />,
+  };
+  
+  return iconMap[title] || <LayoutDashboard />;
+};
 
 interface SidebarDataProps {
   data: {
@@ -65,12 +96,12 @@ export function SidebarData({ data }: SidebarDataProps) {
             <CollapsibleContent>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  {item.items.map((item) => (
-                    <SidebarMenuItem key={item.title}>
+                  {item.items.map((subItem) => (
+                    <SidebarMenuItem key={subItem.title}>
                       <SidebarMenuButton asChild>
-                        <a href={item.url}>
-                          <File />
-                          {item.title}
+                        <a href={subItem.url}>
+                          {getIconForTitle(subItem.title)}
+                          {subItem.title}
                         </a>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
