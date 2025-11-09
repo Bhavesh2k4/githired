@@ -52,11 +52,17 @@ export async function createJob(data: InsertJob) {
     throw new Error("Only verified companies can post jobs");
   }
 
+  // Convert deadline from ISO string to Date if provided
+  const deadline = data.deadline 
+    ? (typeof data.deadline === 'string' ? new Date(data.deadline) : data.deadline)
+    : null;
+
   // Create the job
   const [job] = await db
     .insert(jobs)
     .values({
       ...data,
+      deadline,
       companyId: company.id,
     })
     .returning();
@@ -155,10 +161,16 @@ export async function updateJob(jobId: string, data: Partial<InsertJob>) {
     throw new Error("Job not found or unauthorized");
   }
 
+  // Convert deadline from ISO string to Date if provided
+  const deadline = data.deadline 
+    ? (typeof data.deadline === 'string' ? new Date(data.deadline) : data.deadline)
+    : undefined;
+
   const [updatedJob] = await db
     .update(jobs)
     .set({
       ...data,
+      ...(deadline !== undefined && { deadline }),
       updatedAt: new Date(),
     })
     .where(eq(jobs.id, jobId))
