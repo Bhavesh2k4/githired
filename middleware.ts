@@ -30,6 +30,16 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL("/verify-email", request.url));
     }
 
+    // ==== ADMIN ROLE (check first - admins don't need profiles) ====
+    if (currentUser.role === "admin") {
+        // Admin can access /dashboard/admin
+        if (pathname.startsWith("/dashboard/admin")) {
+            return NextResponse.next();
+        }
+        // Redirect admin from ANY other dashboard route to admin dashboard
+        return NextResponse.redirect(new URL("/dashboard/admin", request.url));
+    }
+
     // Check if user has a profile (for OAuth users who haven't selected role yet)
     let studentProfile = null;
     let companyProfile = null;
@@ -58,16 +68,6 @@ export async function middleware(request: NextRequest) {
         }
         // Allow access to select-role page
         return NextResponse.next();
-    }
-
-    // ==== ADMIN ROLE ====
-    if (currentUser.role === "admin") {
-        // Admin can access /dashboard/admin
-        if (pathname.startsWith("/dashboard/admin")) {
-            return NextResponse.next();
-        }
-        // Redirect admin from ANY other dashboard route to admin dashboard
-        return NextResponse.redirect(new URL("/dashboard/admin", request.url));
     }
 
     // Block non-admins from accessing admin routes
