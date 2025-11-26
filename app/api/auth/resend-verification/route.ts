@@ -1,4 +1,5 @@
 import { auth } from "@/lib/auth";
+import { getAppBaseUrl } from "@/lib/utils";
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 import VerificationEmail from "@/components/emails/verification-email";
@@ -33,7 +34,7 @@ export async function POST(req: NextRequest) {
     // so we'll use the sendVerificationEmail method
     try {
       // Call Better Auth's email verification endpoint
-      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+      const baseUrl = getAppBaseUrl();
       
       // Generate verification token using Better Auth
       const response = await fetch(`${baseUrl}/api/auth/send-verification-email`, {

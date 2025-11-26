@@ -6,6 +6,7 @@ import { db } from "@/db/drizzle";
 import { jobs, companies, students, Job, InsertJob } from "@/db/schema";
 import { eq, desc, and, inArray } from "drizzle-orm";
 import { Resend } from "resend";
+import { getAppBaseUrl } from "@/lib/utils";
 import NewJobNotificationEmail from "@/components/emails/new-job-notification";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -108,7 +109,7 @@ export async function createJob(data: InsertJob) {
     const emailPromises = filteredStudents.map(async (student) => {
       try {
         await resend.emails.send({
-          from: process.env.EMAIL_FROM || "GitHired <onboarding@resend.dev>",
+          from: process.env.EMAIL_FROM || "GitHired <githired@bhavesh-budharaju.in>",
           to: [student.email],
           subject: `New Job Opportunity: ${data.title} at ${company.name}`,
           react: NewJobNotificationEmail({
@@ -118,7 +119,7 @@ export async function createJob(data: InsertJob) {
             jobType: data.type,
             location: data.location,
             salary: data.salary || "Not specified",
-            jobUrl: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/dashboard/jobs`,
+            jobUrl: `${getAppBaseUrl()}/dashboard/jobs`,
           }),
         });
       } catch (error) {

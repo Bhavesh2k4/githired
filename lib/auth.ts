@@ -7,12 +7,14 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
 import { Resend } from "resend";
 import { eq } from "drizzle-orm";
+import { getAppBaseUrl } from "@/lib/utils";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
+const appBaseUrl = getAppBaseUrl();
 
 export const auth = betterAuth({
-    baseURL: process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000",
-    trustedOrigins: [process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"],
+    baseURL: appBaseUrl,
+    trustedOrigins: [appBaseUrl],
     session: {
         expiresIn: 60 * 60 * 24 * 7, // 7 days
         updateAge: 60 * 60 * 24, // 1 day
@@ -25,7 +27,7 @@ export const auth = betterAuth({
         sendVerificationEmail: async ({ user, url }) => {
             try {
                 await resend.emails.send({
-                    from: process.env.EMAIL_FROM || 'GitHired <onboarding@resend.dev>',
+                    from: process.env.EMAIL_FROM || 'GitHired <githired@bhavesh-budharaju.in>',
                     to: [user.email],
                     subject: 'Verify your email address',
                     react: VerificationEmail({ userName: user.name, verificationUrl: url }),
@@ -49,7 +51,7 @@ export const auth = betterAuth({
         sendResetPassword: async ({ user, url }) => {
             try {
                 await resend.emails.send({
-                    from: process.env.EMAIL_FROM || 'GitHired <onboarding@resend.dev>',
+                    from: process.env.EMAIL_FROM || 'GitHired <githired@bhavesh-budharaju.in>',
                     to: [user.email],
                     subject: 'Reset your password',
                     react: PasswordResetEmail({ userName: user.name, resetUrl: url, requestTime: new Date().toLocaleString() }),

@@ -100,7 +100,7 @@ const PasswordResetEmail = ({
               </Text>
               <Text className="text-[14px] text-gray-600 leading-[20px] m-0">
                 If you&apos;re having trouble with your password reset, please
-                contact our support team at support@yourcompany.com or visit our
+                contact our support team at githired@bhavesh-budharaju.in or visit our
                 help center.
               </Text>
             </Section>

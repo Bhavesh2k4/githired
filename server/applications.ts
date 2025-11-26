@@ -7,6 +7,7 @@ import { applications, jobs, students, companies, Application, InsertApplication
 import { eq, desc, and } from "drizzle-orm";
 import { Resend } from "resend";
 import ApplicationStatusUpdateEmail, { getStatusMessage } from "@/components/emails/application-status-update";
+import { getAppBaseUrl } from "@/lib/utils";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -218,16 +219,6 @@ export async function getJobApplications(jobId: string) {
       const studentSkills = app.student.skills || [];
       let skillsMatch = 0;
       
-      // Debug logging to check skills data
-      console.log('Skills Match Debug:', {
-        jobId: jobId,
-        studentId: app.student.id,
-        jobSkills: jobSkills,
-        studentSkills: studentSkills,
-        jobSkillsLength: jobSkills.length,
-        studentSkillsLength: studentSkills.length
-      });
-      
       if (jobSkills.length > 0 && studentSkills.length > 0) {
         // Normalize skills for better matching
         const normalizeSkill = (skill: string) => 
@@ -250,9 +241,6 @@ export async function getJobApplications(jobId: string) {
         });
         
         skillsMatch = (matchingSkills.length / jobSkills.length) * 100;
-        console.log('Skills match calculated:', skillsMatch, 'Matching skills:', matchingSkills.length);
-      } else {
-        console.log('Skills match is 0% - missing skills data');
       }
 
       return {
@@ -353,7 +341,7 @@ export async function updateApplicationStatus(
       const statusInfo = getStatusMessage(status);
 
       await resend.emails.send({
-        from: process.env.EMAIL_FROM || "GitHired <onboarding@resend.dev>",
+        from: process.env.EMAIL_FROM || "GitHired <githired@bhavesh-budharaju.in>",
         to: [student.email],
         subject: `${statusInfo.subject} - ${job.title} at ${company.name}`,
         react: ApplicationStatusUpdateEmail({
@@ -361,7 +349,7 @@ export async function updateApplicationStatus(
           jobTitle: job.title,
           companyName: company.name,
           status,
-          jobUrl: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/dashboard/applications`,
+          jobUrl: `${getAppBaseUrl()}/dashboard/applications`,
         }),
       });
 

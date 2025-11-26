@@ -1,6 +1,5 @@
 # GitHired - Comprehensive Test Results
 
-**Generated**: November 7, 2025  
 **Test Framework Version**: Jest 30.2.0, Playwright 1.56.1  
 **Total Test Suites**: 23  
 **Total Tests**: 372  
